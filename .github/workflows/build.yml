@@ -18,34 +18,30 @@ jobs:
           # --------------------
           - name: macOS arm64
             runner: macos-latest
-            qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
 
           - name: macOS amd64
             runner: macos-15-intel
-            qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
 
-          # # --------------------
-          # # Windows
-          # # --------------------
-          # - name: Windows amd64
-          #   runner: windows-latest
-          #   qt_arch: win64_msvc2022_64
-          #   msvc_arch: amd64
-          #   c_compiler: cl
-          #   cpp_compiler: cl
+          # --------------------
+          # Windows
+          # --------------------
+          - name: Windows amd64
+            runner: windows-latest
+            msvc_arch: amd64
+            c_compiler: cl
+            cpp_compiler: cl
 
-          # - name: Windows arm64
-          #   runner: windows-11-arm
-          #   qt_arch: win64_msvc2022_arm64
-          #   msvc_arch: arm64
-          #   c_compiler: cl
-          #   cpp_compiler: cl
+          - name: Windows arm64
+            runner: windows-11-arm
+            msvc_arch: arm64
+            c_compiler: cl
+            cpp_compiler: cl
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
@@ -58,11 +54,11 @@ jobs:
         run: |
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
       
-    # - name: Setup MSVC
-    #   if: runner.os == 'Windows'
-    #   uses: ilammy/msvc-dev-cmd@v1
-    #   with:
-    #     arch: ${{ matrix.msvc_arch }}
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.msvc_arch }}
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
@@ -70,13 +66,12 @@ jobs:
           aqtversion: '==3.1.*'
           version: '6.8.3'
           target: desktop
-          arch: ${{ matrix.qt_arch }}
 
-    # - name: Configure CMake (Windows)
-    #   if: runner.os == 'Windows'
-    #   run: |
-    #     cmake -B ${{ steps.strings.outputs.build-output-dir }} `
-    #       -S ${{ github.workspace }}
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -B ${{ steps.strings.outputs.build-output-dir }} `
+            -S ${{ github.workspace }}
 
       - name: Configure CMake (macOS)
         if: runner.os != 'Windows'
