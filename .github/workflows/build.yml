@@ -21,12 +21,14 @@ jobs:
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
+            build_type: Release
 
           - name: macOS amd64
             runner: macos-15-intel
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
+            build_type: Release
 
           # # --------------------
           # # Windows
@@ -62,13 +64,13 @@ jobs:
     #   with:
     #     arch: ${{ matrix.msvc_arch }}
 
-      # - name: Install Qt
-      #   uses: jurplel/install-qt-action@v3
-      #   with:
-      #     aqtversion: '==3.1.*'
-      #     version: '6.8.3'
-      #     target: desktop
-      #     arch: ${{ matrix.qt_arch }}
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.8.3'
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
 
     # - name: Configure CMake (Windows)
     #   if: runner.os == 'Windows'
@@ -76,23 +78,23 @@ jobs:
     #     cmake -B ${{ steps.strings.outputs.build-output-dir }} `
     #       -S ${{ github.workspace }}
 
-      # - name: Configure CMake (macOS)
-      #   if: runner.os != 'Windows'
-      #   run: |
-      #     cmake -B ${{ steps.strings.outputs.build-output-dir }} \
-      #       -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-      #       -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-      #       -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-      #       -S ${{ github.workspace }}
+      - name: Configure CMake (macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S ${{ github.workspace }}
 
-      # - name: Build
-      #   run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-      # - name: Upload build artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: OpenVPN3-GUI-${{ matrix.name }}
-      #     path: ${{ steps.strings.outputs.build-output-dir }}
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenVPN3-GUI-${{ matrix.name }}
+          path: ${{ steps.strings.outputs.build-output-dir }}
 
   # build-linux-native:
   #   name: ${{ matrix.name }}
