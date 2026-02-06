@@ -32,22 +32,22 @@ jobs:
             c_compiler: clang
             cpp_compiler: clang++
 
-          # --------------------
-          # Windows
-          # --------------------
-          - name: Windows amd64
-            runner: windows-latest
-            qt_arch: win64_msvc2022_64
-            msvc_arch: amd64
-            c_compiler: cl
-            cpp_compiler: cl
+          # # --------------------
+          # # Windows
+          # # --------------------
+          # - name: Windows amd64
+          #   runner: windows-latest
+          #   qt_arch: win64_msvc2022_64
+          #   msvc_arch: amd64
+          #   c_compiler: cl
+          #   cpp_compiler: cl
 
-          - name: Windows arm64
-            runner: windows-11-arm
-            qt_arch: win64_msvc2022_arm64
-            msvc_arch: arm64
-            c_compiler: cl
-            cpp_compiler: cl
+          # - name: Windows arm64
+          #   runner: windows-11-arm
+          #   qt_arch: win64_msvc2022_arm64
+          #   msvc_arch: arm64
+          #   c_compiler: cl
+          #   cpp_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
@@ -59,11 +59,11 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
       
-    - name: Setup MSVC
-      if: runner.os == 'Windows'
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: ${{ matrix.msvc_arch }}
+    # - name: Setup MSVC
+    #   if: runner.os == 'Windows'
+    #   uses: ilammy/msvc-dev-cmd@v1
+    #   with:
+    #     arch: ${{ matrix.msvc_arch }}
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
@@ -73,11 +73,11 @@ jobs:
         target: desktop
         arch: ${{ matrix.qt_arch }}
 
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        cmake -B ${{ steps.strings.outputs.build-output-dir }} `
-          -S ${{ github.workspace }}
+    # - name: Configure CMake (Windows)
+    #   if: runner.os == 'Windows'
+    #   run: |
+    #     cmake -B ${{ steps.strings.outputs.build-output-dir }} `
+    #       -S ${{ github.workspace }}
 
     - name: Configure CMake (macOS)
       if: runner.os != 'Windows'
@@ -90,249 +90,249 @@ jobs:
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-  build-linux-native:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
+  # build-linux-native:
+  #   name: ${{ matrix.name }}
+  #   runs-on: ${{ matrix.runner }}
 
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [Release]
-        include:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       build_type: [Release]
+  #       include:
 
-          # --------------------
-          # Ubuntu
-          # --------------------
-          - name: Ubuntu 22.04 amd64
-            runner: ubuntu-22.04
-            qt_arch: linux_gcc_64
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         # --------------------
+  #         # Ubuntu
+  #         # --------------------
+  #         - name: Ubuntu 22.04 amd64
+  #           runner: ubuntu-22.04
+  #           qt_arch: linux_gcc_64
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: Ubuntu 24.04 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Ubuntu 24.04 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: Ubuntu 22.04 arm64
-            runner: ubuntu-22.04-arm
-            qt_arch: linux_gcc_arm64
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Ubuntu 22.04 arm64
+  #           runner: ubuntu-22.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: Ubuntu 24.04 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            c_compiler: gcc
-            cpp_compiler: g++
-    steps:
-    - uses: actions/checkout@v4
+  #         - name: Ubuntu 24.04 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+  #   - name: Set reusable strings
+  #     # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+  #     id: strings
+  #     shell: bash
+  #     run: |
+  #       echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        aqtversion: '==3.1.*'
-        version: '6.8.3'
-        target: desktop
-        arch: ${{ matrix.qt_arch }}
+  #   - name: Install Qt
+  #     uses: jurplel/install-qt-action@v3
+  #     with:
+  #       aqtversion: '==3.1.*'
+  #       version: '6.8.3'
+  #       target: desktop
+  #       arch: ${{ matrix.qt_arch }}
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+  #   - name: Configure CMake
+  #     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+  #     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+  #     run: >
+  #       cmake -B ${{ steps.strings.outputs.build-output-dir }}
+  #       -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+  #       -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+  #       -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+  #       -S ${{ github.workspace }}
 
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+  #   - name: Build
+  #     run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-  build-linux-containers:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
-    container: ${{ matrix.container  }}
+  # build-linux-containers:
+  #   name: ${{ matrix.name }}
+  #   runs-on: ${{ matrix.runner }}
+  #   container: ${{ matrix.container  }}
 
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: [Release]
-        include:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       build_type: [Release]
+  #       include:
 
-          # --------------------
-          # Ubuntu
-          # --------------------
+  #         # --------------------
+  #         # Ubuntu
+  #         # --------------------
 
-          - name: Ubuntu 25.04 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: ubuntu:25.04
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Ubuntu 25.04 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: ubuntu:25.04
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: Ubuntu 25.04 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: ubuntu:25.04
-            c_compiler: gcc
-            cpp_compiler: g++
-          # --------------------
-          # Debian
-          # --------------------
-          - name: Debian 12 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: debian:12
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Ubuntu 25.04 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: ubuntu:25.04
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
+  #         # --------------------
+  #         # Debian
+  #         # --------------------
+  #         - name: Debian 12 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: debian:12
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: Debian 12 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: debian:12
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Debian 12 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: debian:12
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
             
-          - name: Debian 13 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: debian:13
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Debian 13 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: debian:13
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
           
-          - name: Debian 13 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: debian:13
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Debian 13 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: debian:13
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
 
-          # --------------------
-          # Fedora
-          # --------------------
-          - name: Fedora 41 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: fedora:41
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         # --------------------
+  #         # Fedora
+  #         # --------------------
+  #         - name: Fedora 41 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: fedora:41
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: Fedora 41 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: fedora:41
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Fedora 41 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: fedora:41
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
             
-          - name: Fedora 42 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: fedora:42
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Fedora 42 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: fedora:42
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
           
-          - name: Fedora 42 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: fedora:42
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: Fedora 42 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: fedora:42
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          # --------------------
-          # RHEL (UBI images)
-          # --------------------
-          - name: RHEL 8 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: registry.access.redhat.com/ubi8/ubi
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         # --------------------
+  #         # RHEL (UBI images)
+  #         # --------------------
+  #         - name: RHEL 8 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: registry.access.redhat.com/ubi8/ubi
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: RHEL 9 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: registry.access.redhat.com/ubi9/ubi
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: RHEL 9 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: registry.access.redhat.com/ubi9/ubi
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: RHEL 10 amd64
-            runner: ubuntu-24.04
-            qt_arch: linux_gcc_64
-            container: registry.access.redhat.com/ubi10/ubi
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: RHEL 10 amd64
+  #           runner: ubuntu-24.04
+  #           qt_arch: linux_gcc_64
+  #           container: registry.access.redhat.com/ubi10/ubi
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: RHEL 8 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: registry.access.redhat.com/ubi8/ubi
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: RHEL 8 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: registry.access.redhat.com/ubi8/ubi
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: RHEL 9 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: registry.access.redhat.com/ubi9/ubi
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: RHEL 9 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: registry.access.redhat.com/ubi9/ubi
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-          - name: RHEL 10 arm64
-            runner: ubuntu-24.04-arm
-            qt_arch: linux_gcc_arm64
-            container: registry.access.redhat.com/ubi10/ubi
-            c_compiler: gcc
-            cpp_compiler: g++
+  #         - name: RHEL 10 arm64
+  #           runner: ubuntu-24.04-arm
+  #           qt_arch: linux_gcc_arm64
+  #           container: registry.access.redhat.com/ubi10/ubi
+  #           c_compiler: gcc
+  #           cpp_compiler: g++
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+  #   - name: Set reusable strings
+  #     # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+  #     id: strings
+  #     shell: bash
+  #     run: |
+  #       echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
       
-    - name: Install build dependencies (Linux containers)
-      shell: bash
-      run: |
-        if command -v apt-get >/dev/null; then
-          apt-get update
-          apt-get install -y build-essential cmake ninja-build
-        elif command -v dnf >/dev/null; then
-          dnf install -y gcc gcc-c++ cmake ninja
-        elif command -v microdnf >/dev/null; then
-          microdnf update -y
-          microdnf install -y gcc gcc-c++ cmake ninja
-        fi
+  #   - name: Install build dependencies (Linux containers)
+  #     shell: bash
+  #     run: |
+  #       if command -v apt-get >/dev/null; then
+  #         apt-get update
+  #         apt-get install -y build-essential cmake ninja-build
+  #       elif command -v dnf >/dev/null; then
+  #         dnf install -y gcc gcc-c++ cmake ninja
+  #       elif command -v microdnf >/dev/null; then
+  #         microdnf update -y
+  #         microdnf install -y gcc gcc-c++ cmake ninja
+  #       fi
 
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        aqtversion: '==3.1.*'
-        version: '6.8.3'
-        target: desktop
-        arch: ${{ matrix.qt_arch }}
+  #   - name: Install Qt
+  #     uses: jurplel/install-qt-action@v3
+  #     with:
+  #       aqtversion: '==3.1.*'
+  #       version: '6.8.3'
+  #       target: desktop
+  #       arch: ${{ matrix.qt_arch }}
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+  #   - name: Configure CMake
+  #     # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+  #     # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+  #     run: >
+  #       cmake -B ${{ steps.strings.outputs.build-output-dir }}
+  #       -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+  #       -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+  #       -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+  #       -S ${{ github.workspace }}
 
-    - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+  #   - name: Build
+  #     run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
