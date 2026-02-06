@@ -22,14 +22,12 @@ jobs:
           # --------------------
           - name: macOS arm64
             runner: macos-latest
-            qt_host: mac
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
 
           - name: macOS amd64
             runner: macos-15-intel
-            qt_host: mac
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
@@ -39,7 +37,6 @@ jobs:
           # --------------------
           - name: Windows amd64
             runner: windows-latest
-            qt_host: windows
             qt_arch: win64_msvc2022_64
             msvc_arch: amd64
             c_compiler: cl
@@ -47,7 +44,6 @@ jobs:
 
           - name: Windows arm64
             runner: windows-11-arm
-            qt_host: windows_arm64
             qt_arch: win64_msvc2022_arm64
             msvc_arch: arm64
             c_compiler: cl
@@ -74,7 +70,6 @@ jobs:
       with:
         aqtversion: '==3.1.*'
         version: '6.8.3'
-        host: ${{ matrix.qt_host }}
         target: desktop
         arch: ${{ matrix.qt_arch }}
 
@@ -110,28 +105,24 @@ jobs:
           # --------------------
           - name: Ubuntu 22.04 amd64
             runner: ubuntu-22.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             c_compiler: gcc
             cpp_compiler: g++
 
           - name: Ubuntu 24.04 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             c_compiler: gcc
             cpp_compiler: g++
 
           - name: Ubuntu 22.04 arm64
             runner: ubuntu-22.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             c_compiler: gcc
             cpp_compiler: g++
 
           - name: Ubuntu 24.04 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             c_compiler: gcc
             cpp_compiler: g++
@@ -150,7 +141,6 @@ jobs:
       with:
         aqtversion: '==3.1.*'
         version: '6.8.3'
-        host: ${{ matrix.qt_host }}
         target: desktop
         arch: ${{ matrix.qt_arch }}
 
@@ -184,7 +174,6 @@ jobs:
 
           - name: Ubuntu 25.04 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: ubuntu:25.04
             c_compiler: gcc
@@ -192,7 +181,6 @@ jobs:
 
           - name: Ubuntu 25.04 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: ubuntu:25.04
             c_compiler: gcc
@@ -202,7 +190,6 @@ jobs:
           # --------------------
           - name: Debian 12 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: debian:12
             c_compiler: gcc
@@ -210,7 +197,6 @@ jobs:
 
           - name: Debian 12 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: debian:12
             c_compiler: gcc
@@ -218,7 +204,6 @@ jobs:
             
           - name: Debian 13 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: debian:13
             c_compiler: gcc
@@ -226,7 +211,6 @@ jobs:
           
           - name: Debian 13 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: debian:13
             c_compiler: gcc
@@ -238,7 +222,6 @@ jobs:
           # --------------------
           - name: Fedora 41 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: fedora:41
             c_compiler: gcc
@@ -246,7 +229,6 @@ jobs:
 
           - name: Fedora 41 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: fedora:41
             c_compiler: gcc
@@ -254,7 +236,6 @@ jobs:
             
           - name: Fedora 42 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: fedora:42
             c_compiler: gcc
@@ -262,7 +243,6 @@ jobs:
           
           - name: Fedora 42 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: fedora:42
             c_compiler: gcc
@@ -273,7 +253,6 @@ jobs:
           # --------------------
           - name: RHEL 8 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: registry.access.redhat.com/ubi8/ubi
             c_compiler: gcc
@@ -281,7 +260,6 @@ jobs:
 
           - name: RHEL 9 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: registry.access.redhat.com/ubi9/ubi
             c_compiler: gcc
@@ -289,7 +267,6 @@ jobs:
 
           - name: RHEL 10 amd64
             runner: ubuntu-24.04
-            qt_host: linux
             qt_arch: linux_gcc_64
             container: registry.access.redhat.com/ubi10/ubi
             c_compiler: gcc
@@ -297,7 +274,6 @@ jobs:
 
           - name: RHEL 8 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: registry.access.redhat.com/ubi8/ubi
             c_compiler: gcc
@@ -305,7 +281,6 @@ jobs:
 
           - name: RHEL 9 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: registry.access.redhat.com/ubi9/ubi
             c_compiler: gcc
@@ -313,7 +288,6 @@ jobs:
 
           - name: RHEL 10 arm64
             runner: ubuntu-24.04-arm
-            qt_host: linux_arm64
             qt_arch: linux_gcc_arm64
             container: registry.access.redhat.com/ubi10/ubi
             c_compiler: gcc
@@ -347,7 +321,6 @@ jobs:
       with:
         aqtversion: '==3.1.*'
         version: '6.8.3'
-        host: ${{ matrix.qt_host }}
         target: desktop
         arch: ${{ matrix.qt_arch }}
 
