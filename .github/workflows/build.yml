@@ -39,6 +39,7 @@ jobs:
             qt_arch: win64_msvc2022_64
             c_compiler: cl
             cpp_compiler: cl
+            build_type: Release
 
           - name: Windows arm64
             runner: windows-11-arm
@@ -46,6 +47,8 @@ jobs:
             qt_arch: win64_msvc2022_arm64
             c_compiler: cl
             cpp_compiler: cl
+            build_type: Release
+
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
@@ -88,10 +91,10 @@ jobs:
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-      # - name: Deploy (macOS)
-      #   if: runner.os != 'Windows'
-      #   run: |
-      #     macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
+      - name: Deploy (macOS)
+        if: runner.os != 'Windows'
+        run: |
+          macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
