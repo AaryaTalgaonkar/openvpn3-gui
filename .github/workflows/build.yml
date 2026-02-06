@@ -26,11 +26,11 @@ jobs:
             c_compiler: clang
             cpp_compiler: clang++
 
-          # - name: macOS amd64
-          #   runner: macos-15-intel
-          #   qt_arch: clang_64
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
+          - name: macOS amd64
+            runner: macos-15-intel
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
 
           # # --------------------
           # # Windows
@@ -90,6 +90,13 @@ jobs:
 
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenVPN3-GUI-${{ matrix.name }}
+          path: ${{ steps.strings.outputs.build-output-dir }}
+
   # build-linux-native:
   #   name: ${{ matrix.name }}
   #   runs-on: ${{ matrix.runner }}
