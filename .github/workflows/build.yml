@@ -249,6 +249,7 @@ jobs:
     - name: Run LinuxDeploy
       shell: bash
       run: |
+        convert "${{ github.workspace }}/img/logo.png" -resize 256x256! "${{ github.workspace }}/img/logo_fixed.png"
         TOOL_DIR="${{ github.workspace }}"
         APPDIR="${{ steps.strings.outputs.build-output-dir }}"
         
@@ -258,7 +259,7 @@ jobs:
                 
         $LINUXDEPLOY_BIN --appdir "$APPDIR" \
           -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
-          -i "${{ github.workspace }}/img/logo.png" \
+          -i "${{ github.workspace }}/img/logo_fixed.png" \
           -e "$APPDIR/app" \
           --plugin qt \
           --output appimage
