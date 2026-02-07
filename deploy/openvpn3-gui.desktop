@@ -2,5 +2,6 @@
 Type=Application
 Name=OpenVPN3-GUI
 Exec=app
+Icon=logo
 Categories=Network;
 Comment=OpenVPN 3 GUI Client
