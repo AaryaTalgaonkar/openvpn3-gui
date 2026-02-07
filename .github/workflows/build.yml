@@ -69,7 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OpenVPN3-GUI-${{ matrix.name }}
-          path: ${{ steps.strings.outputs.build-output-dir }}
+          path: ${{ steps.strings.outputs.build-output-dir }}/app.app/Contents
   
   build-windows:
     strategy:
@@ -87,6 +87,15 @@ jobs:
             c_compiler: cl
             cpp_compiler: cl
             cmake_arch: x64
+            build_type: Release
+
+          - name: Windows x86
+            runner: windows-latest
+            msvc_arch: amd64_x86     
+            qt_arch: win32_msvc2022 
+            c_compiler: cl
+            cpp_compiler: cl
+            cmake_arch: Win32   
             build_type: Release
 
           - name: Windows arm64
@@ -141,16 +150,16 @@ jobs:
             --qtpaths "$env:QT_ROOT_DIR\bin\qtpaths.bat" `
             ${{ steps.strings.outputs.build-output-dir }}\Release\app.exe
 
-      - name: Deploy (Windows amd64)
-        if: matrix.cmake_arch == 'x64'
+      - name: Deploy (Windows x86 and amd64)
+        if: matrix.cmake_arch == 'x64' || matrix.cmake_arch == 'Win32'
         run: |
-          windeployqt ${{ steps.strings.outputs.build-output-dir }}\Release\app.exe
+          windeployqt "${{ steps.strings.outputs.build-output-dir }}\Release\app.exe"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OpenVPN3-GUI-${{ matrix.name }}
-          path: ${{ steps.strings.outputs.build-output-dir }}
+          path: ${{ steps.strings.outputs.build-output-dir }}\Release\
 
 
   # build-linux-native:
@@ -200,7 +209,7 @@ jobs:
   #       echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
   #   - name: Install Qt
-  #     uses: jurplel/install-qt-action@v3
+  #     uses: jurplel/install-qt-action@v4
   #     with:
   #       aqtversion: '==3.1.*'
   #       version: '6.8.3'
@@ -380,7 +389,7 @@ jobs:
   #       fi
 
   #   - name: Install Qt
-  #     uses: jurplel/install-qt-action@v3
+  #     uses: jurplel/install-qt-action@v4
   #     with:
   #       aqtversion: '==3.1.*'
   #       version: '6.8.3'
