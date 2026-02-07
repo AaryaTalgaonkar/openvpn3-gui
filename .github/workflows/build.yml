@@ -258,11 +258,9 @@ jobs:
         ARCH_SUFFIX=$(uname -m)
         
         LINUXDEPLOY_BIN="$TOOL_DIR/linuxdeploy-$ARCH_SUFFIX.AppImage"
-        
-        export PATH="$TOOL_DIR:$PATH"
-        
+                
         $LINUXDEPLOY_BIN --appdir "$APPDIR" \
-          -e "$APPDIR/bin/openvpn3-gui" \
+          -e "$APPDIR/app" \
           -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
           -i "$QT_ICON" \
           --plugin qt \
