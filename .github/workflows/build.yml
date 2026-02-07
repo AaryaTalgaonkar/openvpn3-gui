@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-native:
+  build-mac:
     strategy:
       fail-fast: false
       matrix:
@@ -16,31 +16,78 @@ jobs:
           # --------------------
           # macOS
           # --------------------
-          # - name: macOS arm64
-          #   runner: macos-latest
-          #   qt_arch: clang_64
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
-          #   build_type: Release
+          - name: macOS arm64
+            runner: macos-latest
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
 
-          # - name: macOS amd64
-          #   runner: macos-15-intel
-          #   qt_arch: clang_64
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
-          #   build_type: Release
+          - name: macOS amd64
+            runner: macos-15-intel
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set reusable strings
+        # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          aqtversion: '==3.3.*'
+          py7zrversion: '==1.0.*'
+          arch: ${{ matrix.qt_arch }}
+
+      - name: Configure CMake
+        run: |
+          cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S ${{ github.workspace }}
+
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+      - name: Deploy
+        run: |
+          macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenVPN3-GUI-${{ matrix.name }}
+          path: ${{ steps.strings.outputs.build-output-dir }}
+  
+  build-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
 
           # --------------------
           # Windows
           # --------------------
-          # - name: Windows amd64
-          #   runner: windows-latest
-          #   msvc_arch: amd64
-          #   qt_arch: win64_msvc2022_64
-          #   c_compiler: cl
-          #   cpp_compiler: cl
-          #   cmake_arch: x64
-          #   build_type: Release
+          - name: Windows amd64
+            runner: windows-latest
+            msvc_arch: amd64
+            qt_arch: win64_msvc2022_64
+            c_compiler: cl
+            cpp_compiler: cl
+            cmake_arch: x64
+            build_type: Release
 
           - name: Windows arm64
             runner: windows-latest
@@ -64,7 +111,6 @@ jobs:
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
       
       - name: Setup MSVC
-        if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.msvc_arch }}
@@ -79,40 +125,33 @@ jobs:
           arch: ${{ matrix.qt_arch }}
 
       - name: Configure CMake (Windows)
-        if: runner.os == 'Windows'
         run: |
           cmake -B ${{ steps.strings.outputs.build-output-dir }} `
             -S ${{ github.workspace }} `
             -A ${{ matrix.cmake_arch }}
 
-      - name: Configure CMake (macOS)
-        if: runner.os != 'Windows'
-        run: |
-          cmake -B ${{ steps.strings.outputs.build-output-dir }} \
-            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -S ${{ github.workspace }}
-
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-      - name: Deploy (macOS)
-        if: runner.os != 'Windows'
-        run: |
-          macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
-
-      - name: Deploy (windows)
-        if: runner.os == 'Windows'
+      - name: Deploy (Windows ARM64)
+        if: matrix.cmake_arch == 'ARM64'
         shell: pwsh
         run: |
-          & "${{ env.QT_HOST_PATH}}\bin\windeployqt.exe" --qtpaths "${{ env.QT_ROOT_DIR}}\bin\qtpaths.bat" ${{ steps.strings.outputs.build-output-dir }}/Release/app.exe
+          & "$env:QT_HOST_PATH\bin\windeployqt.exe" `
+            --qtpaths "$env:QT_ROOT_DIR\bin\qtpaths.bat" `
+            ${{ steps.strings.outputs.build-output-dir }}\Release\app.exe
+
+      - name: Deploy (Windows amd64)
+        if: matrix.cmake_arch == 'x64'
+        run: |
+          windeployqt ${{ steps.strings.outputs.build-output-dir }}\Release\app.exe
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OpenVPN3-GUI-${{ matrix.name }}
           path: ${{ steps.strings.outputs.build-output-dir }}
+
 
   # build-linux-native:
   #   name: ${{ matrix.name }}
