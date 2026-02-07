@@ -16,30 +16,30 @@ jobs:
           # --------------------
           # macOS
           # --------------------
-          - name: macOS arm64
-            runner: macos-latest
-            qt_arch: clang_64
-            c_compiler: clang
-            cpp_compiler: clang++
-            build_type: Release
+          # - name: macOS arm64
+          #   runner: macos-latest
+          #   qt_arch: clang_64
+          #   c_compiler: clang
+          #   cpp_compiler: clang++
+          #   build_type: Release
 
-          - name: macOS amd64
-            runner: macos-15-intel
-            qt_arch: clang_64
-            c_compiler: clang
-            cpp_compiler: clang++
-            build_type: Release
+          # - name: macOS amd64
+          #   runner: macos-15-intel
+          #   qt_arch: clang_64
+          #   c_compiler: clang
+          #   cpp_compiler: clang++
+          #   build_type: Release
 
           # --------------------
           # Windows
           # --------------------
-          - name: Windows amd64
-            runner: windows-latest
-            msvc_arch: amd64
-            qt_arch: win64_msvc2022_64
-            c_compiler: cl
-            cpp_compiler: cl
-            build_type: Release
+          # - name: Windows amd64
+          #   runner: windows-latest
+          #   msvc_arch: amd64
+          #   qt_arch: win64_msvc2022_64
+          #   c_compiler: cl
+          #   cpp_compiler: cl
+          #   build_type: Release
 
           - name: Windows arm64
             runner: windows-11-arm
@@ -66,6 +66,12 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.msvc_arch }}
+      
+
+      - name: Check MSVC environment
+        if: runner.os == 'Windows'
+        run: |
+          aqt list-qt windows desktop --arch 6.8.3
 
       - name: Install Qt x64 Host (Requirement for ARM64)
         if: matrix.qt_arch == 'win64_msvc2022_arm64'
@@ -75,7 +81,7 @@ jobs:
           aqtversion: '==3.3.*'
           py7zrversion: '==1.0.*'
           arch: 'win64_msvc2022_64'
-          
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
