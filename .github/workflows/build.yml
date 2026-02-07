@@ -106,7 +106,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          & "${{ QT_ROOT_DIR}}\bin\windeployqt.exe" --verbose 1 ${{ steps.strings.outputs.build-output-dir }}/Release/app.exe
+          & "${{ env.QT_ROOT_DIR}}\bin\windeployqt.exe" --verbose 1 ${{ steps.strings.outputs.build-output-dir }}/Release/app.exe
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
