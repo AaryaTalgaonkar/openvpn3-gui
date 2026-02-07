@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=OpenVPN3-GUI
+Exec=openvpn3-gui
+Icon=openvpn3-gui
+Categories=Network;
+Comment=OpenVPN 3 GUI Client
