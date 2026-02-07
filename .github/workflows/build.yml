@@ -18,6 +18,7 @@ jobs:
           # --------------------
           - name: macOS arm64
             runner: macos-latest
+            qt_host: macos
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
@@ -25,6 +26,7 @@ jobs:
 
           - name: macOS amd64
             runner: macos-15-intel
+            qt_host: macos
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
@@ -36,6 +38,7 @@ jobs:
           - name: Windows amd64
             runner: windows-latest
             msvc_arch: amd64
+            qt_host: windows
             qt_arch: win64_msvc2022_64
             c_compiler: cl
             cpp_compiler: cl
@@ -44,6 +47,7 @@ jobs:
           - name: Windows arm64
             runner: windows-11-arm
             msvc_arch: arm64
+            qt_host: windows_arm64
             qt_arch: win64_msvc2022_arm64
             c_compiler: cl
             cpp_compiler: cl
@@ -71,6 +75,7 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.8.3'
+          host: ${{ matrix.qt_host }}
           arch: ${{ matrix.qt_arch }}
 
       - name: Configure CMake (Windows)
