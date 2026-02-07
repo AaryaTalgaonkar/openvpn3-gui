@@ -93,7 +93,7 @@ jobs:
           - name: Windows x86
             runner: windows-latest
             msvc_arch: amd64_x86     
-            qt_arch: win32_msvc2022
+            qt_arch: win32_msvc2019
             qt_version: 5.15.2
             c_compiler: cl
             cpp_compiler: cl
@@ -127,7 +127,11 @@ jobs:
         with:
           arch: ${{ matrix.msvc_arch }}
 
-
+      - name: Check Version
+        run: |
+          pip install aqtinstall
+          aqt list-qt windows desktop --arch 5.15.2
+        
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
