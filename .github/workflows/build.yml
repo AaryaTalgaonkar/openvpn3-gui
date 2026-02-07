@@ -39,6 +39,7 @@ jobs:
           #   qt_arch: win64_msvc2022_64
           #   c_compiler: cl
           #   cpp_compiler: cl
+          #   cmake_arch: x64
           #   build_type: Release
 
           - name: Windows arm64
@@ -47,6 +48,7 @@ jobs:
             qt_arch: win64_msvc2022_arm64_cross_compiled
             c_compiler: cl
             cpp_compiler: cl
+            cmake_arch: ARM64
             build_type: Release
 
     name: ${{ matrix.name }}
@@ -80,7 +82,8 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cmake -B ${{ steps.strings.outputs.build-output-dir }} `
-            -S ${{ github.workspace }}
+            -S ${{ github.workspace }} `
+            -A ${{ matrix.cmake_arch }}
 
       - name: Configure CMake (macOS)
         if: runner.os != 'Windows'
