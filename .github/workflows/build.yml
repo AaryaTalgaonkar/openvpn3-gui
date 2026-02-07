@@ -89,15 +89,6 @@ jobs:
             cmake_arch: x64
             build_type: Release
 
-          - name: Windows x86
-            runner: windows-latest
-            msvc_arch: amd64_x86     
-            qt_arch: win32_msvc2022 
-            c_compiler: cl
-            cpp_compiler: cl
-            cmake_arch: Win32   
-            build_type: Release
-
           - name: Windows arm64
             runner: windows-latest
             msvc_arch: amd64_arm64
@@ -150,8 +141,8 @@ jobs:
             --qtpaths "$env:QT_ROOT_DIR\bin\qtpaths.bat" `
             ${{ steps.strings.outputs.build-output-dir }}\Release\app.exe
 
-      - name: Deploy (Windows x86 and amd64)
-        if: matrix.cmake_arch == 'x64' || matrix.cmake_arch == 'Win32'
+      - name: Deploy (Windows amd64)
+        if: matrix.cmake_arch == 'x64'
         run: |
           windeployqt "${{ steps.strings.outputs.build-output-dir }}\Release\app.exe"
 
