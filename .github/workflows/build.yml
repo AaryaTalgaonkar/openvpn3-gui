@@ -251,7 +251,7 @@ jobs:
     - name: Run LinuxDeploy
       shell: bash
       env:
-        QMAKE: ${{ env.Qt6_DIR }}/bin/qmake
+        QMAKE: ${{ env.QT_ROOT_DIR }}/bin/qmake
       run: |
         export APPDIR=${{ github.workspace }}/AppDir
         ARCH_SUFFIX=$(uname -m) # returns x86_64 or aarch64
