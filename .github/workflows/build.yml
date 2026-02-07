@@ -68,10 +68,11 @@ jobs:
           arch: ${{ matrix.msvc_arch }}
       
 
-      - name: Check MSVC environment
+      - name: Check environment
         if: runner.os == 'Windows'
         run: |
-          aqt list-qt windows desktop --arch 6.8.3
+          python -m pip install aqtinstall
+          python -m aqt list-qt windows desktop --arch 6.8.3
 
       - name: Install Qt x64 Host (Requirement for ARM64)
         if: matrix.qt_arch == 'win64_msvc2022_arm64'
