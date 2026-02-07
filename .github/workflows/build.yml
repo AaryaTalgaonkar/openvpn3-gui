@@ -42,9 +42,9 @@ jobs:
             build_type: Release
 
           - name: Windows arm64
-            runner: windows-latest
-            msvc_arch: amd64_arm64
-            qt_arch: win64_msvc2022_arm64_cross_compiled
+            runner: windows-11-arm
+            msvc_arch: arm64
+            qt_arch: win64_msvc2022_arm64
             c_compiler: cl
             cpp_compiler: cl
             build_type: Release
@@ -71,6 +71,8 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.8.3'
+          aqtversion: '==3.3.*'
+          py7zrversion: '==1.0.*'
           arch: ${{ matrix.qt_arch }}
 
       - name: Configure CMake (Windows)
@@ -95,6 +97,11 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
+
+      - name: Deploy (windows)
+        if: runner.os == 'Windows'
+        run: |
+          windeployqt ${{ steps.strings.outputs.build-output-dir }}/app.exe
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
