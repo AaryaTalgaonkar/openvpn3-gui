@@ -238,9 +238,6 @@ jobs:
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
-    - name: Install
-      run: cmake --install ${{ steps.strings.outputs.build-output-dir }} --prefix ${{ github.workspace }}/AppDir
     
     - name: Install LinuxDeploy
       id: install-linuxdeploy
@@ -253,7 +250,7 @@ jobs:
       shell: bash
       run: |
         TOOL_DIR="${{ github.workspace }}"
-        APPDIR="${{ github.workspace }}/AppDir"
+        APPDIR="${{ steps.strings.outputs.build-output-dir }}"
         
         ARCH_SUFFIX=$(uname -m)
         
