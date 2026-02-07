@@ -257,6 +257,7 @@ jobs:
         LINUXDEPLOY_BIN="$TOOL_DIR/linuxdeploy-$ARCH_SUFFIX.AppImage"
                 
         $LINUXDEPLOY_BIN --appdir "$APPDIR" \
+          -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
           -e "$APPDIR/app" \
           --plugin qt \
           --output appimage
