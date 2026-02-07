@@ -67,6 +67,15 @@ jobs:
         with:
           arch: ${{ matrix.msvc_arch }}
 
+      - name: Install Qt x64 Host (Requirement for ARM64)
+        if: matrix.qt_arch == 'win64_msvc2022_arm64'
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.8.3'
+          aqtversion: '==3.3.*'
+          py7zrversion: '==1.0.*'
+          arch: 'win64_msvc2022_64'
+          
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
@@ -101,7 +110,7 @@ jobs:
       - name: Deploy (windows)
         if: runner.os == 'Windows'
         run: |
-          windeployqt ${{ steps.strings.outputs.build-output-dir }}/app.exe
+          windeployqt ${{ steps.strings.outputs.build-output-dir }}/Release/app.exe
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
