@@ -267,7 +267,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: OpenVPN3-GUI-${{ matrix.name }}
-        path: ./*.AppImage
+        path: OpenVPN3-GUI-*.AppImage
 
   # build-linux-containers:
   #   name: ${{ matrix.name }}
