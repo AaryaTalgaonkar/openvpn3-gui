@@ -44,8 +44,15 @@ jobs:
             cpp_compiler: clang++
             build_type: Release
 
-          - name: macOS amd64 13
-            runner: macos-13
+          - name: macOS amd64 14
+            runner: macos-14
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+          - name: macOS amd64 26
+            runner: macos-26
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
