@@ -94,8 +94,8 @@ jobs:
           # --------------------
           # Windows
           # --------------------
-          - name: Windows amd64
-            runner: windows-latest
+          - name: Windows 11 amd64
+            runner: windows-2025
             msvc_arch: amd64
             qt_arch: win64_msvc2022_64
             qt_version: 6.10.1
@@ -114,8 +114,28 @@ jobs:
           #   cmake_arch: Win32   
           #   build_type: Release
 
-          - name: Windows arm64
-            runner: windows-latest
+          - name: Windows 11 arm64
+            runner: windows-2025
+            msvc_arch: amd64_arm64
+            qt_arch: win64_msvc2022_arm64_cross_compiled
+            qt_version: 6.9.1
+            c_compiler: cl
+            cpp_compiler: cl
+            cmake_arch: ARM64
+            build_type: Release
+
+          - name: Windows 10 amd64
+            runner: windows-2022
+            msvc_arch: amd64
+            qt_arch: win64_msvc2022_64
+            qt_version: 6.10.1
+            c_compiler: cl
+            cpp_compiler: cl
+            cmake_arch: x64
+            build_type: Release
+
+          - name: Windows 10 arm64
+            runner: windows-2022
             msvc_arch: amd64_arm64
             qt_arch: win64_msvc2022_arm64_cross_compiled
             qt_version: 6.9.1
