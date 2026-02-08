@@ -93,26 +93,6 @@ jobs:
         run: |
           macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
 
-      - name: Fix macOS codesigning (Qt)
-        run: |
-          APP="${{ steps.strings.outputs.build-output-dir }}/app.app"
-
-          echo "Removing existing framework signatures..."
-          find "$APP/Contents/Frameworks" -type d -name "*.framework" \
-            -exec codesign --remove-signature {} \;
-
-          echo "Re-signing Qt frameworks..."
-          find "$APP/Contents/Frameworks" -type d -name "*.framework" \
-            -exec codesign --force --options runtime --sign - {} \;
-
-          echo "Signing app binary..."
-          codesign --force --options runtime --sign - \
-            "$APP/Contents/MacOS/app"
-
-          echo "Verifying signatures..."
-          codesign --verify --deep --strict --verbose=4 "$APP"
-
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
