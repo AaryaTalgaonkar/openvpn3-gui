@@ -14,10 +14,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+
+
+
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -25,12 +25,24 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         resources.qrc
-        vpncontroller.h
-        openvpnmgmt.h
-        vpncontroller.cpp
-        openvpnmgmt.cpp
-    )
 
+
+
+
+
+        src/main.cpp  src/openvpnmgmt.cpp src/vpncontroller.cpp
+
+
+        src/mainwindow.cpp
+        headers/openvpnmgmt.h headers/vpncontroller.h
+        headers/mainwindow.h
+        mainwindow.ui
+
+    )
+target_include_directories(app
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers
+)
 
 
 # Define target properties for Android with Qt 6 as:
