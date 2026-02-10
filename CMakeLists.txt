@@ -24,7 +24,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(app
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        resources.qrc
+
 
 
 
@@ -36,7 +36,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/mainwindow.cpp
         headers/openvpnmgmt.h headers/vpncontroller.h
         headers/mainwindow.h
-        mainwindow.ui
+        resources/resources.qrc
+        forms/mainwindow.ui
+
 
     )
 target_include_directories(app
