@@ -8,7 +8,9 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(CMAKE_AUTOUIC_SEARCH_PATHS
+    ${CMAKE_CURRENT_SOURCE_DIR}/forms
+)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
@@ -34,10 +36,15 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
         src/mainwindow.cpp
-        headers/openvpnmgmt.h headers/vpncontroller.h
+        headers/openvpnmgmt.h headers/windowsvpnbackend.h
         headers/mainwindow.h
         resources/resources.qrc
         forms/mainwindow.ui
+        headers/linuxvpnbackend.h
+        src/LinuxVpnBackend.cpp
+        headers/ivpnbackend.h
+        headers/vpncontroller.h
+        src/windowsvpnbackend.cpp
 
 
     )

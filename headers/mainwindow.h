@@ -2,7 +2,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include "vpncontroller.h"
-#include "./ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 class MainWindow : public QMainWindow
 {

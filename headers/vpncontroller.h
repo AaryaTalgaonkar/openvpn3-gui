@@ -2,15 +2,12 @@
 #define VPNCONTROLLER_H
 
 #include <QObject>
-#include <QProcess>
-#include <QDir>
-#include <QCoreApplication>
-#include "openvpnmgmt.h"
+#include <memory>
+#include "ivpnbackend.h"
 
 class VpnController : public QObject
 {
     Q_OBJECT
-
 public:
     explicit VpnController(QObject *parent = nullptr);
 
@@ -28,11 +25,7 @@ signals:
     void statusChanged(const QString &status);
 
 private:
-    QProcess *vpnProcess = nullptr;
-    OpenVpnMgmt *mgmt = nullptr;
-    bool connectedState = false;
-
-    QString resolveOpenVpnBinary() const;
+    std::unique_ptr<IVpnBackend> backend;
 };
 
 #endif
