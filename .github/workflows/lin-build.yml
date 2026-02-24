@@ -100,13 +100,13 @@ jobs:
           -i "${{ github.workspace }}/resources/img/logo-modified.png" \
           -e "$APPDIR/app" \
           --plugin qt \
-          --output appimage
+          --output native_packages
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: OpenVPN3-GUI-${{ matrix.name }}
-        path: OpenVPN3-GUI-*.AppImage
+        path: OpenVPN3-GUI-*.deb
 
   # build-linux-containers:
   #   name: ${{ matrix.name }}
