@@ -83,7 +83,7 @@ jobs:
       uses: miurahr/install-linuxdeploy-action@v1.8.0
       with:
         dir: ${{ github.workspace }}
-        plugins: qt native_packages
+        plugins: qt linuxdeploy/linuxdeploy-plugin-native_packages
 
     - name: Run LinuxDeploy
       shell: bash
