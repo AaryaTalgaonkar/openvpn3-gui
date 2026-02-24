@@ -1,0 +1,84 @@
+name: Mac OpenVPN3 GUI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --------------------
+          # macOS
+          # --------------------
+          - name: macOS arm64 14
+            runner: macos-14
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+          - name: macOS arm64 15
+            runner: macos-15
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+          - name: macOS arm64 26
+            runner: macos-26
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+          - name: macOS amd64 15
+            runner: macos-15-intel
+            qt_arch: clang_64
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set reusable strings
+        # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.1'
+          aqtversion: '==3.3.*'
+          py7zrversion: '==1.0.*'
+          arch: ${{ matrix.qt_arch }}
+
+      - name: Configure CMake
+        run: |
+          cmake -B ${{ steps.strings.outputs.build-output-dir }} \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -S ${{ github.workspace }}
+
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+      - name: Deploy
+        run: |
+          macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenVPN3-GUI-${{ matrix.name }}
+          path: ${{ steps.strings.outputs.build-output-dir }}/app.app/Contents
+  
+ 
