@@ -105,7 +105,8 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: OpenVPN3-GUI-${{ matrix.name }}
-        path: OpenVPN3-GUI-*.deb
+        path: build/usr
+        if-no-files-found: warn
 
   # build-linux-containers:
   #   name: ${{ matrix.name }}
