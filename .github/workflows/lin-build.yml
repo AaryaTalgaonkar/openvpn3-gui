@@ -83,7 +83,7 @@ jobs:
       uses: miurahr/install-linuxdeploy-action@v1.8.0
       with:
         dir: ${{ github.workspace }}
-        plugins: qt linuxdeploy/linuxdeploy-plugin-native_packages
+        plugins: qt 
 
     - name: Run LinuxDeploy
       shell: bash
@@ -99,9 +99,8 @@ jobs:
           -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
           -i "${{ github.workspace }}/resources/img/logo-modified.png" \
           -e "$APPDIR/app" \
-          --plugin qt \
-          --output native_packages
-
+          --plugin qt 
+          
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
