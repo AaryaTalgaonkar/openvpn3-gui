@@ -1,4 +1,4 @@
-name: Build OpenVPN3 GUI
+name: Linux OpenVPN3 GUI
 
 on:
   workflow_dispatch:
