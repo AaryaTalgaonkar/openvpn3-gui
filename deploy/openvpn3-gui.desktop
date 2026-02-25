@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=IITDelhi VPN
-Exec=/usr/bin/app
+Exec=app
 Icon=logo-modified
 Categories=Network;
 Comment=OpenVPN 3 GUI Client
