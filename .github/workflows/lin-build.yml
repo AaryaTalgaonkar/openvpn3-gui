@@ -100,6 +100,37 @@ jobs:
           -i "${{ github.workspace }}/resources/img/logo-modified.png" \
           -e "$APPDIR/app" \
           --plugin qt 
+
+    - name: Filter system libraries and docs
+      shell: bash
+      run: |
+        APPDIR="${{ steps.strings.outputs.build-output-dir }}/usr"
+
+        echo "Filtering libraries in $APPDIR/lib..."
+        mkdir -p "$APPDIR/lib-keep"
+        for lib in "$APPDIR/lib"/*.so*; do
+          [ -e "$lib" ] || continue
+          base=$(basename "$lib")
+          if ldconfig -p | grep -q "$base"; then
+            echo "SYSTEM LIBRARY: $base → moving to lib-keep"
+            mv "$lib" "$APPDIR/lib-keep/"
+          else
+            echo "BUNDLE: $base"
+          fi
+        done
+
+        echo "Filtering documentation in $APPDIR/share/doc..."
+        mkdir -p "$APPDIR/share/doc-keep"
+        for doc in "$APPDIR/share/doc"/*; do
+          [ -e "$doc" ] || continue
+          name=$(basename "$doc")
+          if [ -e "/usr/share/doc/$name" ]; then
+            echo "SYSTEM DOC: $name → moving to doc-keep"
+            mv "$doc" "$APPDIR/share/doc-keep/"
+          else
+            echo "BUNDLE DOC: $name"
+          fi
+        done
           
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
