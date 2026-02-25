@@ -105,28 +105,26 @@ jobs:
       shell: bash
       run: |
         APPDIR="${{ steps.strings.outputs.build-output-dir }}/usr"
-
+    
         echo "Filtering libraries in $APPDIR/lib..."
-        mkdir -p "$APPDIR/lib-keep"
         for lib in "$APPDIR/lib"/*.so*; do
           [ -e "$lib" ] || continue
           base=$(basename "$lib")
           if ldconfig -p | grep -q "$base"; then
-            echo "SYSTEM LIBRARY: $base → moving to lib-keep"
-            mv "$lib" "$APPDIR/lib-keep/"
+            echo "SYSTEM LIBRARY: $base → removing"
+            rm -f "$lib"
           else
             echo "BUNDLE: $base"
           fi
         done
-
+    
         echo "Filtering documentation in $APPDIR/share/doc..."
-        mkdir -p "$APPDIR/share/doc-keep"
         for doc in "$APPDIR/share/doc"/*; do
           [ -e "$doc" ] || continue
           name=$(basename "$doc")
           if [ -e "/usr/share/doc/$name" ]; then
-            echo "SYSTEM DOC: $name → moving to doc-keep"
-            mv "$doc" "$APPDIR/share/doc-keep/"
+            echo "SYSTEM DOC: $name → removing"
+            rm -rf "$doc"
           else
             echo "BUNDLE DOC: $name"
           fi
