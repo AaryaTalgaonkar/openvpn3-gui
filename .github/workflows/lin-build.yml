@@ -56,9 +56,11 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+    
     - name: Install Wayland
       run: | 
             sudo apt install qt6-wayland
+            sudo apt install libwayland-dev libwayland-egl1-mesa libwayland-server0 libgles2-mesa-dev libxkbcommon-dev
             export QT_QPA_PLATFORM=wayland
 
     - name: Install Qt
@@ -88,6 +90,7 @@ jobs:
       with:
         dir: ${{ github.workspace }}
         plugins: qt 
+        modules: qtwayland
 
     - name: Run LinuxDeploy
       shell: bash
@@ -98,8 +101,6 @@ jobs:
         ARCH_SUFFIX=$(uname -m)
         
         LINUXDEPLOY_BIN="$TOOL_DIR/linuxdeploy-$ARCH_SUFFIX.AppImage"
-
-        export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
         
         $LINUXDEPLOY_BIN --appdir "$APPDIR" \
           -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
