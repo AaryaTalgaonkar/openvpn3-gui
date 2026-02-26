@@ -96,6 +96,7 @@ jobs:
       shell: bash
       env:
         EXTRA_PLATFORM_PLUGINS: "libqwayland.so"
+        EXTRA_QT_MODULES: "libQt6WaylandClient.so"
       run: |
         TOOL_DIR="${{ github.workspace }}"
         APPDIR="${{ steps.strings.outputs.build-output-dir }}"
