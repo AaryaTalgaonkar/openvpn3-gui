@@ -95,7 +95,7 @@ jobs:
     - name: Run LinuxDeploy
       shell: bash
       env:
-        EXTRA_PLATFORM_PLUGINS: "libqwayland-egl.so;libqwayland-generic.so"
+        EXTRA_PLATFORM_PLUGINS: "libqwayland.so"
       run: |
         TOOL_DIR="${{ github.workspace }}"
         APPDIR="${{ steps.strings.outputs.build-output-dir }}"
