@@ -56,12 +56,6 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-    
-    - name: Install Wayland
-      run: | 
-            sudo apt install qt6-wayland
-            sudo apt install libwayland-dev libwayland-egl1-mesa libwayland-server0 libgles2-mesa-dev libxkbcommon-dev
-            export QT_QPA_PLATFORM=wayland
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
