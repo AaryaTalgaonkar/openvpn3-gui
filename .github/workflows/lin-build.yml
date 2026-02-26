@@ -94,7 +94,9 @@ jobs:
         ARCH_SUFFIX=$(uname -m)
         
         LINUXDEPLOY_BIN="$TOOL_DIR/linuxdeploy-$ARCH_SUFFIX.AppImage"
-                
+
+        export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
+        
         $LINUXDEPLOY_BIN --appdir "$APPDIR" \
           -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
           -i "${{ github.workspace }}/resources/img/logo-modified.png" \
