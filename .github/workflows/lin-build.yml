@@ -97,7 +97,7 @@ jobs:
       run: |
         TOOL_DIR="${{ github.workspace }}"
         APPDIR="${{ steps.strings.outputs.build-output-dir }}"
-        EXTRA_PLATFORM_PLUGINS: "wayland"
+        export EXTRA_PLATFORM_PLUGINS="wayland"
         ARCH_SUFFIX=$(uname -m)
         
         LINUXDEPLOY_BIN="$TOOL_DIR/linuxdeploy-$ARCH_SUFFIX.AppImage"
