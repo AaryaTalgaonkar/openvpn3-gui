@@ -59,6 +59,8 @@ jobs:
     - name: Install Wayland
       run: | 
             sudo apt install qt6-wayland
+            export QT_QPA_PLATFORM=wayland
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:
