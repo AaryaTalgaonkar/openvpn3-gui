@@ -70,7 +70,6 @@ jobs:
         version: ${{ matrix.qt_version }}
         target: desktop
         arch: ${{ matrix.qt_arch }}
-        modules: qtwayland
 
 
     - name: Configure CMake
