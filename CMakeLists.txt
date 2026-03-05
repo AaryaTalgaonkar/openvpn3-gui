@@ -41,10 +41,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         resources/resources.qrc
         forms/mainwindow.ui
         headers/linuxvpnbackend.h
-        src/LinuxVpnBackend.cpp
+        src/linuxvpnbackend.cpp
         headers/ivpnbackend.h
         headers/vpncontroller.h
         src/windowsvpnbackend.cpp
+        headers/linuxvpnbackend.h
 
 
     )
