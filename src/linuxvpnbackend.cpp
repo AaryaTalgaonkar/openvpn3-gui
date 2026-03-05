@@ -61,7 +61,7 @@ void LinuxVpnBackend::disconnectVpn()
     emit disconnected();
     emit statusChanged("Connect");
 
-    logProcess.kill();
+    logProcess.terminate();
 }
 
 void LinuxVpnBackend::onSessionError()
@@ -77,31 +77,25 @@ void LinuxVpnBackend::onLogOutput()
 
         QString line = QString::fromUtf8(logProcess.readLine()).trimmed();
         qDebug().noquote() << "[OVPN3]" << line;
+        if (!line.contains("[STATUS]"))
+            continue;
 
-        // ✅ Connected
         if (line.contains("Client connected")) {
             connectedState = true;
             emit connected();
             emit statusChanged("Disconnect");
         }
-
-        // ❌ Auth failed
-        if (line.contains("authentication failed", Qt::CaseInsensitive)) {
+        else if (line.contains("Authentication failed")) {
             emit errorOccurred("Incorrect username/password");
         }
-
-        // ❌ Certificate issues
-        if (line.contains("parse_cert") ||
-            line.contains("Certificate verification failed")) {
-            emit errorOccurred(line);
+        else if (line.contains("parse_cert_crl_error")) {
+            emit errorOccurred("Error parsing CA certificate. The CA certificate may be corrupted or invalid.");
         }
-
-        // 🔌 Disconnected
-        if (line.contains("Client disconnected") ||
-            line.contains("Client process exited")) {
-            connectedState = false;
-            emit disconnected();
-            emit statusChanged("Connect");
+        else if(line.contains("parse_pem")){
+            emit errorOccurred("Invalid certificate. Please check the certificate format.");
+        }
+        else if(line.contains("Certificate verification failed")){
+            emit errorOccurred("Certificate verification failed. Probably your certificate has expired.");
         }
     }
 }
