@@ -1,6 +1,7 @@
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QCloseEvent>
 #include "vpncontroller.h"
 #include "ui_mainwindow.h"
 
@@ -19,4 +20,5 @@ private slots:
 private:
     Ui::MainWindow *ui;
     VpnController vpn;
+    void closeEvent(QCloseEvent *event) override;
 };

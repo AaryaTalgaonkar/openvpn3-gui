@@ -7,11 +7,23 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     connect(&vpn, &VpnController::statusChanged,
-            ui->connectButton, &QPushButton::setText);
+            this, [this](const QString &status) {
 
+                ui->connectButton->setText(status);
+
+                if (status == "Connecting..." || status == "Disconnecting...") {
+                    ui->connectButton->setEnabled(false);
+                } else {
+                    ui->connectButton->setEnabled(true);
+                }
+            });
     connect(&vpn, &VpnController::errorOccurred,
-            this, [&](const QString &msg) {
+            this, [this](const QString &msg) {
+
                 QMessageBox::critical(this, "VPN Error", msg);
+
+                ui->connectButton->setText("Connect");
+                ui->connectButton->setEnabled(true);
             });
 }
 
@@ -39,4 +51,12 @@ void MainWindow::on_connectButton_clicked()
     } else {
         vpn.disconnectVpn();
     }
+}
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (vpn.isConnected()) {
+        vpn.disconnectVpn();
+    }
+
+    event->accept();
 }

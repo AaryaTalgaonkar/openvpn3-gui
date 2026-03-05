@@ -51,7 +51,21 @@ void OpenVpnMgmt::onReadyRead()
         }
 
         if (line.startsWith(">FATAL:")) {
-            emit fatalError(line);
+            QString msg;
+            if (line.contains("parse_cert_crl_error")) {
+                msg = "Error parsing CA certificate. The CA certificate may be corrupted or invalid.";
+            }
+            else if (line.contains("X509::parse_pem") && line.contains("bad base64 decode")) {
+                msg = "Invalid certificate. Please check the certificate format.";
+            }
+            else if (line.contains("CERT_VERIFY_FAIL")) {
+                msg = "Certificate verification failed. Probably your certificate has expired.";
+            }
+            else {
+                msg = line;
+            }
+
+            emit fatalError(msg);
         }
 
         if (line.startsWith(">STATE:") && line.contains(",CONNECTED,")) {
