@@ -7,8 +7,6 @@ LinuxVpnBackend::LinuxVpnBackend(QObject *parent)
     connect(&logProcess, &QProcess::readyReadStandardOutput,
             this, &LinuxVpnBackend::onLogOutput);
 
-    connect(&sessionStart, &QProcess::readyReadStandardError,
-            this, &LinuxVpnBackend::onSessionError);
 }
 
 bool LinuxVpnBackend::isConnected() const
@@ -64,12 +62,6 @@ void LinuxVpnBackend::disconnectVpn()
     logProcess.terminate();
 }
 
-void LinuxVpnBackend::onSessionError()
-{
-    QString err = sessionStart.readAllStandardError().trimmed();
-    if (!err.isEmpty())
-        emit errorOccurred(err);
-}
 
 void LinuxVpnBackend::onLogOutput()
 {

@@ -16,7 +16,6 @@ public:
 
 private slots:
     void onLogOutput();
-    void onSessionError();
 
 private:
     QProcess logProcess;
