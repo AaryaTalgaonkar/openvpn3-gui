@@ -45,7 +45,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         headers/ivpnbackend.h
         headers/vpncontroller.h
         src/windowsvpnbackend.cpp
-        headers/linuxvpnbackend.h
 
 
     )
