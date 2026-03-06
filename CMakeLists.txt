@@ -36,7 +36,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
         src/mainwindow.cpp
-        headers/openvpnmgmt.h headers/windowsvpnbackend.h
+        headers/openvpnmgmt.h headers/winmacvpnbackend.h
         headers/mainwindow.h
         resources/resources.qrc
         forms/mainwindow.ui
@@ -44,7 +44,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/linuxvpnbackend.cpp
         headers/ivpnbackend.h
         headers/vpncontroller.h
-        src/windowsvpnbackend.cpp
+        src/winmacvpnbackend.cpp
 
 
     )

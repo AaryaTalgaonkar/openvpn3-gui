@@ -2,18 +2,18 @@
 
 #ifdef Q_OS_LINUX
 #include "linuxvpnbackend.h"
-#elif defined(Q_OS_WIN)
-#include "windowsvpnbackend.h"
+#elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
+#include "winmacvpnbackend.h"
 #endif
 
 VpnController::VpnController(QObject *parent)
     : QObject(parent)
 {
-#ifdef Q_OS_LINUX
-    backend = std::make_unique<LinuxVpnBackend>(this);
-#elif defined(Q_OS_WIN)
-    backend = std::make_unique<WindowsVpnBackend>(this);
-#endif
+    #ifdef Q_OS_LINUX
+        backend = std::make_unique<LinuxVpnBackend>(this);
+    #elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
+        backend = std::make_unique<WinMacVpnBackend>(this);
+    #endif
 
     // 🔁 Forward backend signals to UI
     connect(backend.get(), &IVpnBackend::connected,

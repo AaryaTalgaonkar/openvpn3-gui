@@ -1,24 +1,29 @@
-#include "windowsvpnbackend.h"
+#include "winmacvpnbackend.h"
 
-WindowsVpnBackend::WindowsVpnBackend(QObject *parent)
+WinMacVpnBackend::WinMacVpnBackend(QObject *parent)
     : IVpnBackend(parent)
 {
 }
 
-bool WindowsVpnBackend::isConnected() const
+bool WinMacVpnBackend::isConnected() const
 {
     return connectedState;
 }
 
-QString WindowsVpnBackend::resolveOpenVpnBinary() const
+QString WinMacVpnBackend::resolveOpenVpnBinary() const
 {
     QDir dir(QCoreApplication::applicationDirPath());
     dir.cdUp();
     dir.cd("openvpn3");
-    return dir.filePath("omicliagent.exe");
+
+    #ifdef Q_OS_WIN
+        return dir.filePath("omicliagent.exe");
+    #else
+        return dir.filePath("omicliagent");
+    #endif
 }
 
-void WindowsVpnBackend::connectVpn(const QString &ovpnPath,
+void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
                                    const QString &username,
                                    const QString &password)
 {
@@ -63,7 +68,7 @@ void WindowsVpnBackend::connectVpn(const QString &ovpnPath,
     mgmt->start(username, password);
 }
 
-void WindowsVpnBackend::disconnectVpn()
+void WinMacVpnBackend::disconnectVpn()
 {
     if (!mgmt || !connectedState)
         return;

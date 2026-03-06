@@ -1,5 +1,5 @@
-#ifndef WINDOWSVPNBACKEND_H
-#define WINDOWSVPNBACKEND_H
+#ifndef WINMACVPNBACKEND_H
+#define WINMACVPNBACKEND_H
 
 #include "ivpnbackend.h"
 #include "openvpnmgmt.h"
@@ -8,12 +8,12 @@
 #include <QDir>
 #include <QCoreApplication>
 
-class WindowsVpnBackend : public IVpnBackend
+class WinMacVpnBackend : public IVpnBackend
 {
     Q_OBJECT
 
 public:
-    explicit WindowsVpnBackend(QObject *parent = nullptr);
+    explicit WinMacVpnBackend(QObject *parent = nullptr);
 
     void connectVpn(const QString &ovpnPath,
                     const QString &username,
