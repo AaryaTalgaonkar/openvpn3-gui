@@ -12,28 +12,28 @@ jobs:
           # --------------------
           # macOS
           # --------------------
-          - name: macOS arm64 14
+          - name: macOS-arm64-14
             runner: macos-14
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
 
-          - name: macOS arm64 15
+          - name: macOS-arm64-15
             runner: macos-15
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
 
-          - name: macOS arm64 26
+          - name: macOS-arm64-26
             runner: macos-26
             qt_arch: clang_64
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Release
 
-          - name: macOS amd64 15
+          - name: macOS-amd64-15
             runner: macos-15-intel
             qt_arch: clang_64
             c_compiler: clang
