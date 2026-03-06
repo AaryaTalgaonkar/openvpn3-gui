@@ -75,10 +75,15 @@ jobs:
         run: |
           macdeployqt ${{ steps.strings.outputs.build-output-dir }}/app.app
 
+      - name: Create tarball
+        run: |
+          cd ${{ steps.strings.outputs.build-output-dir }}
+          tar -cvf OpenVPN3-GUI-${{ matrix.name }}.tar app.app
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: OpenVPN3-GUI-${{ matrix.name }}
-          path: ${{ steps.strings.outputs.build-output-dir }}/app.app
+          path: ${{ steps.strings.outputs.build-output-dir }}/OpenVPN3-GUI-${{ matrix.name }}.tar
   
  
