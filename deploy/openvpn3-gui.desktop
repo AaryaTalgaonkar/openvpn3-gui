@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=IITDelhi VPN
+Name=IITDelhiVPN
 Exec=IITDelhiVPN
-Icon=logo-modified
+Icon=iitdelhivpn
 Categories=Network;
 Comment=IITDelhi VPN Client
