@@ -99,9 +99,9 @@ jobs:
         LINUXDEPLOY_BIN="$TOOL_DIR/linuxdeploy-$ARCH_SUFFIX.AppImage"
         
         $LINUXDEPLOY_BIN --appdir "$APPDIR" \
-          -d "${{ github.workspace }}/deploy/openvpn3-gui.desktop" \
-          -i "${{ github.workspace }}/resources/img/logo-modified.png" \
-          -e "$APPDIR/app" \
+          -d "${{ github.workspace }}/deploy/iitdelhivpn.desktop" \
+          -i "${{ github.workspace }}/resources/img/iitdelhivpn.png" \
+          -e "$APPDIR/IITDelhiVPN" \
           --plugin qt 
 
     - name: Filter system libraries and docs
