@@ -43,7 +43,7 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -81,7 +81,7 @@ jobs:
           tar -cvf OpenVPN3-GUI-${{ matrix.name }}.tar IITDelhiVPN.app
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: OpenVPN3-GUI-${{ matrix.name }}
           path: ${{ steps.strings.outputs.build-output-dir }}/OpenVPN3-GUI-${{ matrix.name }}.tar
