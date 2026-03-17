@@ -1,10 +1,16 @@
 #include "openvpnmgmt.h"
 
 OpenVpnMgmt::OpenVpnMgmt(const QString &host, quint16 port, QObject *parent)
-    : QObject(parent)
+    : QObject(parent), host(host), port(port)
 {
-    socket.connectToHost(host, port);
     connect(&socket, &QTcpSocket::readyRead, this, &OpenVpnMgmt::onReadyRead);
+    socket.connectToHost(this->host, this->port);
+
+    if (socket.waitForConnected(5000)) {
+        qDebug() << "Connected to OpenVPN management interface!";
+    } else {
+        qDebug() << "Failed to connect within 5 seconds:" << socket.errorString();
+    }
 }
 
 void OpenVpnMgmt::start(const QString &username, const QString &password)
@@ -26,24 +32,10 @@ void OpenVpnMgmt::onReadyRead()
         QByteArray line = socket.readLine().trimmed();
         qDebug().noquote() << "[MGMT]" << line;
 
-        if (ignoreCount > 0) {
-            ignoreCount--;
-            continue;
-        }
-
-        switch (phase) {
-        case 0:
+        if (line.startsWith(">PASSWORD:Need 'Auth' username/password")) {
             socket.write("state on\n");
-            phase++;
-            return;
-        case 1:
             socket.write(QString("username Auth %1\n").arg(user).toUtf8());
-            phase++;
-            return;
-        case 2:
             socket.write(QString("password Auth %1\n").arg(pass).toUtf8());
-            phase++;
-            return;
         }
 
         if (line.startsWith(">PASSWORD:Verification Failed")) {

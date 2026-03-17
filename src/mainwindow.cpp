@@ -57,6 +57,5 @@ void MainWindow::closeEvent(QCloseEvent *event)
     if (vpn.isConnected()) {
         vpn.disconnectVpn();
     }
-
-    event->accept();
+        event->accept();
 }

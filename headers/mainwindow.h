@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QCloseEvent>
+#include <QTimer>
 #include "vpncontroller.h"
 #include "ui_mainwindow.h"
 
