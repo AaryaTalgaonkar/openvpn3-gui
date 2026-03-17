@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS
     ${CMAKE_CURRENT_SOURCE_DIR}/forms
 )
+
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
@@ -48,10 +50,19 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
     )
+
+set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/deploy/iitdelhivpn.icns)
+set_source_files_properties(${APP_ICON} PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources"
+)
+target_sources(IITDelhiVPN PRIVATE ${APP_ICON})
+
+    
 target_include_directories(IITDelhiVPN
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/headers
 )
+
 
 
 # Define target properties for Android with Qt 6 as:
@@ -72,6 +83,10 @@ else()
     endif()
 endif()
 
+
+
+
+
 target_link_libraries(IITDelhiVPN PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
@@ -84,6 +99,7 @@ set_target_properties(IITDelhiVPN PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE_ICON_FILE iitdelhivpn.icns
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
