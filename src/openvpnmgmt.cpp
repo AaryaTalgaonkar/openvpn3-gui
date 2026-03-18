@@ -7,9 +7,11 @@ OpenVpnMgmt::OpenVpnMgmt(const QString &host, quint16 port, QObject *parent)
     socket.connectToHost(this->host, this->port);
 
     if (socket.waitForConnected(5000)) {
-        qDebug() << "Connected to OpenVPN management interface!";
+        QMessageBox::information(nullptr, "VPN",
+                                 "Connected to OpenVPN management interface!");
     } else {
-        qDebug() << "Failed to connect within 5 seconds:" << socket.errorString();
+        QMessageBox::critical(nullptr, "VPN Error",
+                              "Failed to connect within 5 seconds:\n" + socket.errorString());
     }
 }
 
