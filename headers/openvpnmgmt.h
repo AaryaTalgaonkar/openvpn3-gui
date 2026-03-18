@@ -5,7 +5,6 @@
 #include <QTcpSocket>
 #include <QDebug>
 #include <QTimer>
-#include <QMessageBox>
 
 class OpenVpnMgmt : public QObject
 {

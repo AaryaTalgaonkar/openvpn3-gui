@@ -15,8 +15,6 @@ OpenVpnMgmt::OpenVpnMgmt(const QString &host, quint16 port, QObject *parent)
     });
 
     connect(&socket, &QTcpSocket::connected, this, [&]() {
-        QMessageBox::information(nullptr, "VPN",
-                                 "Connected to OpenVPN management interface!");
         retryTimer->stop();
     });
 
