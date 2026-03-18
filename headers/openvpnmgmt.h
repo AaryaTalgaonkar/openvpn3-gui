@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QDebug>
-#include <QTimer>
 
 class OpenVpnMgmt : public QObject
 {
@@ -28,9 +27,6 @@ private:
     QTcpSocket socket;
     QString user;
     QString pass;
-    QString host;
-    quint16 port;
-    QTimer *retryTimer;
 
 
 };

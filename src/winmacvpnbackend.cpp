@@ -43,29 +43,40 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
 
     vpnProcess->start(resolveOpenVpnBinary(), args);
 
-    mgmt = new OpenVpnMgmt("127.0.0.1", 7505, this);
+    connect(vpnProcess, &QProcess::readyReadStandardOutput, this,
+            [this, username, password]() {
 
-    connect(mgmt, &OpenVpnMgmt::connected, this, [&]() {
-        connectedState = true;
-        emit connected();
-        emit statusChanged("Disconnect");
-    });
+                QByteArray output = vpnProcess->readAllStandardOutput();
+                QString text = QString::fromUtf8(output);
 
-    connect(mgmt, &OpenVpnMgmt::authFailed, this,
-            [&](const QString &msg) {
-                emit errorOccurred(msg);
-                vpnProcess->deleteLater();
-                vpnProcess = nullptr;
+                if (text.contains("OMI Listening") && !mgmt) {
+
+                    mgmt = new OpenVpnMgmt("127.0.0.1", 7505, this);
+
+                    connect(mgmt, &OpenVpnMgmt::connected, this, [&]() {
+                        connectedState = true;
+                        emit connected();
+                        emit statusChanged("Disconnect");
+                    });
+
+                    connect(mgmt, &OpenVpnMgmt::authFailed, this,
+                            [&](const QString &msg) {
+                                emit errorOccurred(msg);
+                                vpnProcess->deleteLater();
+                                vpnProcess = nullptr;
+                            });
+
+                    connect(mgmt, &OpenVpnMgmt::fatalError, this,
+                            [&](const QString &msg) {
+                                emit errorOccurred(msg);
+                                vpnProcess->deleteLater();
+                                vpnProcess = nullptr;
+                            });
+
+                    mgmt->start(username, password);
+                }
             });
 
-    connect(mgmt, &OpenVpnMgmt::fatalError, this,
-            [&](const QString &msg) {
-                emit errorOccurred(msg);
-                vpnProcess->deleteLater();
-                vpnProcess = nullptr;
-            });
-
-    mgmt->start(username, password);
 }
 
 void WinMacVpnBackend::disconnectVpn()

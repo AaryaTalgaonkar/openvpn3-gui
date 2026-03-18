@@ -1,24 +1,10 @@
 #include "openvpnmgmt.h"
 
 OpenVpnMgmt::OpenVpnMgmt(const QString &host, quint16 port, QObject *parent)
-    : QObject(parent), host(host), port(port)
+    : QObject(parent)
 {
+    socket.connectToHost(host, port);
     connect(&socket, &QTcpSocket::readyRead, this, &OpenVpnMgmt::onReadyRead);
-
-    retryTimer = new QTimer(this);
-    retryTimer->setInterval(1000);
-
-    connect(retryTimer, &QTimer::timeout, this, [&]() {
-        if (socket.state() == QAbstractSocket::UnconnectedState) {
-            socket.connectToHost(host, port);
-        }
-    });
-
-    connect(&socket, &QTcpSocket::connected, this, [&]() {
-        retryTimer->stop();
-    });
-
-    retryTimer->start();
 }
 
 void OpenVpnMgmt::start(const QString &username, const QString &password)
