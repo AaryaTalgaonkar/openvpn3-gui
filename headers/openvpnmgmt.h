@@ -31,6 +31,8 @@ private:
     QString pass;
     QString host;
     quint16 port;
+    QTimer *retryTimer;
+
 
 };
 

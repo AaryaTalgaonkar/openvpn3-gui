@@ -4,15 +4,23 @@ OpenVpnMgmt::OpenVpnMgmt(const QString &host, quint16 port, QObject *parent)
     : QObject(parent), host(host), port(port)
 {
     connect(&socket, &QTcpSocket::readyRead, this, &OpenVpnMgmt::onReadyRead);
-    socket.connectToHost(this->host, this->port);
 
-    if (socket.waitForConnected(5000)) {
+    retryTimer = new QTimer(this);
+    retryTimer->setInterval(1000);
+
+    connect(retryTimer, &QTimer::timeout, this, [&]() {
+        if (socket.state() == QAbstractSocket::UnconnectedState) {
+            socket.connectToHost(host, port);
+        }
+    });
+
+    connect(&socket, &QTcpSocket::connected, this, [&]() {
         QMessageBox::information(nullptr, "VPN",
                                  "Connected to OpenVPN management interface!");
-    } else {
-        QMessageBox::critical(nullptr, "VPN Error",
-                              "Failed to connect within 5 seconds:\n" + socket.errorString());
-    }
+        retryTimer->stop();
+    });
+
+    retryTimer->start();
 }
 
 void OpenVpnMgmt::start(const QString &username, const QString &password)
