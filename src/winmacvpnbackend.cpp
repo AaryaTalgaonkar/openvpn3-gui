@@ -38,7 +38,8 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
         "--config", ovpnPath,
         "--connection-timeout", "120",
         "--management", "127.0.0.1", "7505",
-        "--management-query-passwords"
+        "--management-query-passwords",
+        "--auth-use-cert-cn-username"
     };
 
     vpnProcess->start(resolveOpenVpnBinary(), args);

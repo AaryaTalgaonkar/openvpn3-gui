@@ -26,6 +26,13 @@ void OpenVpnMgmt::onReadyRead()
         QByteArray line = socket.readLine().trimmed();
         qDebug().noquote() << "[MGMT]" << line;
 
+        if (line.startsWith(">PASSWORD:Need 'Auth' password")) {
+            socket.write("log on\n");
+            socket.write("state on\n");
+            socket.write("bytecount 1\n");
+            socket.write(QString("password Auth %1\n").arg(pass).toUtf8());
+        }
+
         if (line.startsWith(">PASSWORD:Need 'Auth' username/password")) {
             socket.write("state on\n");
             socket.write(QString("username Auth %1\n").arg(user).toUtf8());
