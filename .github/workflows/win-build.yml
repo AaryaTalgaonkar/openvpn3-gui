@@ -104,12 +104,12 @@ jobs:
         run: |
           & "$env:QT_HOST_PATH\bin\windeployqt.exe" `
             --qtpaths "$env:QT_ROOT_DIR\bin\qtpaths.bat" `
-            ${{ steps.strings.outputs.build-output-dir }}\Release\app.exe
+            ${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe
 
       - name: Deploy (Windows amd64 and Win32)
         if: matrix.cmake_arch == 'x64' || matrix.cmake_arch == 'Win32'
         run: |
-          windeployqt "${{ steps.strings.outputs.build-output-dir }}\Release\app.exe"
+          windeployqt "${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
