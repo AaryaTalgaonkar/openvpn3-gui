@@ -14,7 +14,7 @@ QString WinMacVpnBackend::resolveOpenVpnBinary() const
 {
     QDir dir(QCoreApplication::applicationDirPath());
     dir.cdUp();
-    dir.cd("openvpn3");
+    dir.cd("backend");
 
     #ifdef Q_OS_WIN
         return dir.filePath("iitdvpncli.exe");
