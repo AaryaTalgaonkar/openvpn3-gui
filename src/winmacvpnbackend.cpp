@@ -17,9 +17,9 @@ QString WinMacVpnBackend::resolveOpenVpnBinary() const
     dir.cd("openvpn3");
 
     #ifdef Q_OS_WIN
-        return dir.filePath("omicliagent.exe");
+        return dir.filePath("iitdvpncli.exe");
     #else
-        return dir.filePath("omicliagent");
+        return dir.filePath("iitdvpncli");
     #endif
 }
 
