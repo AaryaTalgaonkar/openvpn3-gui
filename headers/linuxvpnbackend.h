@@ -8,7 +8,6 @@ public:
     explicit LinuxVpnBackend(QObject *parent = nullptr);
 
     void connectVpn(const QString &ovpnPath,
-                    const QString &username,
                     const QString &password) override;
 
     void disconnectVpn() override;

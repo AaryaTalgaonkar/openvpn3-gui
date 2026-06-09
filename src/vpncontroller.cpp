@@ -15,7 +15,6 @@ VpnController::VpnController(QObject *parent)
         backend = std::make_unique<WinMacVpnBackend>(this);
     #endif
 
-    // 🔁 Forward backend signals to UI
     connect(backend.get(), &IVpnBackend::connected,
             this, &VpnController::connected);
 
@@ -25,15 +24,30 @@ VpnController::VpnController(QObject *parent)
     connect(backend.get(), &IVpnBackend::errorOccurred,
             this, &VpnController::errorOccurred);
 
+    connect(backend.get(), &IVpnBackend::logLineReceived,
+            this, &VpnController::logLineReceived);
+
     connect(backend.get(), &IVpnBackend::statusChanged,
             this, &VpnController::statusChanged);
+
+        connect(backend.get(), &IVpnBackend::stateChanged,
+            this, &VpnController::stateChanged);
+
+            connect(backend.get(), &IVpnBackend::byteCountChanged,
+                this, &VpnController::byteCountChanged);
+            connect(backend.get(), &IVpnBackend::connectionInfoChanged,
+                this, &VpnController::connectionInfoChanged);
 }
 
 void VpnController::connectVpn(const QString &ovpnPath,
-                               const QString &username,
                                const QString &password)
 {
-    backend->connectVpn(ovpnPath, username, password);
+    backend->connectVpn(ovpnPath, password);
+}
+
+void VpnController::updatePassword(const QString &password)
+{
+    backend->updatePassword(password);
 }
 
 void VpnController::disconnectVpn()

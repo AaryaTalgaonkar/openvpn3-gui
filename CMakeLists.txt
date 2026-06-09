@@ -34,14 +34,23 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
 
-        src/main.cpp  src/openvpnmgmt.cpp src/vpncontroller.cpp
+        src/main.cpp src/vpncontroller.cpp
+        src/certificatedownloadservice.cpp
 
 
         src/mainwindow.cpp
-        headers/openvpnmgmt.h headers/winmacvpnbackend.h
+        src/connectionprogresswidget.cpp
+        src/trafficgraphwidget.cpp
+        headers/winmacvpnbackend.h
         headers/mainwindow.h
+        headers/connectionprogresswidget.h
+        headers/trafficgraphwidget.h
+        headers/certificatedownloadservice.h
         resources/resources.qrc
         forms/mainwindow.ui
+        forms/downloadscreen.ui
+        forms/connectscreen.ui
+        forms/disconnectscreen.ui
         headers/linuxvpnbackend.h
         src/linuxvpnbackend.cpp
         headers/ivpnbackend.h

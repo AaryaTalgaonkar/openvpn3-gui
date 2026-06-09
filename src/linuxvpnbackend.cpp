@@ -15,7 +15,6 @@ bool LinuxVpnBackend::isConnected() const
 }
 
 void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
-                                 const QString &username,
                                  const QString &password)
 {
     if (logProcess.state() != QProcess::NotRunning)
@@ -23,6 +22,7 @@ void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
 
     configPath = ovpnPath;
     emit statusChanged("Connecting...");
+    emit stateChanged(QStringLiteral("CONNECTING"));
 
     // 1️⃣ Start log watcher FIRST
     logProcess.start("openvpn3", {
@@ -38,7 +38,6 @@ void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
                                    });
 
     // 3️⃣ Provide credentials
-    sessionStart.write(QString("%1\n").arg(username).toUtf8());
     sessionStart.write(QString("%1\n").arg(password).toUtf8());
 }
 
