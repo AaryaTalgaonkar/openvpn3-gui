@@ -36,8 +36,7 @@ private slots:
     void on_themeToggleButton_clicked();
     void on_logsButton_clicked();
     void handleVpnStateChanged(const QString &state);
-    void handleVpnConnected();
-    void handleVpnDisconnected();
+    void handleVpnConnectionStateChanged(VpnConnectionState state);
     void handleVpnError(const QString &message);
     void handleVpnByteCountChanged(qulonglong uploadBytes, qulonglong downloadBytes);
     void handleVpnConnectionInfoChanged(const QString &remote, const QString &remoteAddr, const QString &proto, const QString &localIface, const QString &localIp, const QString &gateway, int mtu);

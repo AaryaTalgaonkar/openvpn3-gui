@@ -191,13 +191,6 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::handleConnectButtonClicked);
     loadSavedCertificateState();
 
-    connect(backend.get(), &IVpnBackend::statusChanged,
-            this, [this](const QString &status) {
-                const bool busy = (status == "Connecting..." || status == "Disconnecting...");
-                connectUi.connectButton->setEnabled(!busy);
-                disconnectUi.disconnectButton->setEnabled(!busy);
-            });
-
     connect(backend.get(), &IVpnBackend::stateChanged,
             this, &MainWindow::handleVpnStateChanged);
 
@@ -207,11 +200,8 @@ MainWindow::MainWindow(QWidget *parent)
             connect(backend.get(), &IVpnBackend::connectionInfoChanged,
                 this, &MainWindow::handleVpnConnectionInfoChanged);
 
-    connect(backend.get(), &IVpnBackend::connected,
-            this, &MainWindow::handleVpnConnected);
-
-    connect(backend.get(), &IVpnBackend::disconnected,
-            this, &MainWindow::handleVpnDisconnected);
+    connect(backend.get(), &IVpnBackend::connectionStateChanged,
+            this, &MainWindow::handleVpnConnectionStateChanged);
 
     connect(backend.get(), &IVpnBackend::errorOccurred,
             this, &MainWindow::handleVpnError);
@@ -534,34 +524,41 @@ void MainWindow::applyTheme(bool dark)
         }
     }
 
-    void MainWindow::handleVpnConnected()
+    void MainWindow::handleVpnConnectionStateChanged(VpnConnectionState state)
     {
-        spinnerTimer->stop();
-        if (progressWidget) {
-            progressWidget->setProgressStep(kConnectionStepCount - 1, kConnectionStepCount);
-        }
-        updateStepRows(kConnectionStepCount - 1);
-        resetTrafficIndicators();
-        trafficTimer.start();
-        ui->statusbar->showMessage(QStringLiteral("Status: Connected"));
-        // Move traffic widget into the disconnect host and show the disconnect page
-        if (trafficGraphWidget) {
-            trafficGraphWidget->setParent(nullptr);
-            disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
-        }
-        showConnectPage();
-    }
+        switch (state) {
+        case VpnConnectionState::Disconnected:
+            spinnerTimer->stop();
+            resetConnectingIndicators();
+            resetTrafficIndicators();
+            if (trafficGraphWidget) {
+                trafficGraphWidget->setParent(nullptr);
+                connectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
+            }
+            showConnectPage();
+            break;
 
-    void MainWindow::handleVpnDisconnected()
-    {
-        spinnerTimer->stop();
-        resetConnectingIndicators();
-        resetTrafficIndicators();
-        if (trafficGraphWidget) {
-            trafficGraphWidget->setParent(nullptr);
-            connectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
+        case VpnConnectionState::Connecting:
+            showConnectingPage();
+            break;
+
+        case VpnConnectionState::Connected:
+            spinnerTimer->stop();
+            if (progressWidget) {
+                progressWidget->setProgressStep(kConnectionStepCount - 1, kConnectionStepCount);
+            }
+            updateStepRows(kConnectionStepCount - 1);
+            resetTrafficIndicators();
+            trafficTimer.start();
+            ui->statusbar->showMessage(QStringLiteral("Status: Connected"));
+            // Move traffic widget into the disconnect host and show the disconnect page
+            if (trafficGraphWidget) {
+                trafficGraphWidget->setParent(nullptr);
+                disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
+            }
+            showConnectPage();
+            break;
         }
-        showConnectPage();
     }
 
     void MainWindow::handleVpnError(const QString &message)

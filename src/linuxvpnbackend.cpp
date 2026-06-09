@@ -21,8 +21,8 @@ void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
         return;
 
     configPath = ovpnPath;
-    emit statusChanged("Connecting...");
-    emit stateChanged(QStringLiteral("CONNECTING"));
+    connectedState = VpnConnectionState::Connecting;
+    emit connectionStateChanged(connectedState);
 
     // 1️⃣ Start log watcher FIRST
     logProcess.start("openvpn3", {
@@ -46,8 +46,6 @@ void LinuxVpnBackend::disconnectVpn()
     if (connectedState != VpnConnectionState::Connected)
         return;
 
-    emit statusChanged("Disconnecting...");
-
     QProcess::execute("openvpn3", {
                                       "session-manage",
                                       "--config", configPath,
@@ -56,7 +54,7 @@ void LinuxVpnBackend::disconnectVpn()
 
     connectedState = VpnConnectionState::Disconnected;
     emit disconnected();
-    emit statusChanged("Connect");
+    emit connectionStateChanged(connectedState);
 
     logProcess.terminate();
 }
@@ -74,7 +72,7 @@ void LinuxVpnBackend::onLogOutput()
         if (line.contains("Client connected")) {
             connectedState = VpnConnectionState::Connected;
             emit connected();
-            emit statusChanged("Disconnect");
+            emit connectionStateChanged(connectedState);
         }
         else if (line.contains("Authentication failed")) {
             emit errorOccurred("Incorrect username/password");

@@ -139,7 +139,8 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
         return;
 
     mgmtPassword = password;
-    emit statusChanged("Connecting...");
+    connectedState = VpnConnectionState::Connecting;
+    emit connectionStateChanged(connectedState);
     vpnProcess = new QProcess(this);
 
     QStringList args {
@@ -185,7 +186,6 @@ void WinMacVpnBackend::disconnectVpn()
     if (mgmtSocket.state() != QAbstractSocket::ConnectedState || connectedState != VpnConnectionState::Connected)
         return;
 
-    emit statusChanged("Disconnecting...");
     mgmtSocket.write("signal SIGTERM\n");
     mgmtSocket.flush();
 }
@@ -250,13 +250,14 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
                 if (stateStr == QStringLiteral("CONNECTED")) {
                     connectedState = VpnConnectionState::Connected;
                     emit connected();
-                    emit statusChanged("Disconnect");
+                    emit connectionStateChanged(connectedState);
                 } else if (stateStr == QStringLiteral("EXITING")) {
                     connectedState = VpnConnectionState::Disconnected;
                     emit disconnected();
-                    emit statusChanged("Connect");
-                } else {
+                    emit connectionStateChanged(connectedState);
+                } else if (stateStr == QStringLiteral("RECONNECTING")) {
                     connectedState = VpnConnectionState::Connecting;
+                    emit connectionStateChanged(connectedState);
                 }
             }
         }
