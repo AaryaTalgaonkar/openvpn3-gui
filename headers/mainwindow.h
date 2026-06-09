@@ -1,4 +1,5 @@
 #include <QMainWindow>
+#include <memory>
 #include "custommessagebox.h"
 #include <QCloseEvent>
 #include <QSettings>
@@ -12,7 +13,7 @@ class QUrl;
 class QLabel;
 class QTimer;
 
-#include "vpncontroller.h"
+#include "ivpnbackend.h"
 #include "certificatedownloadservice.h"
 #include "connectionprogresswidget.h"
 #include "trafficgraphwidget.h"
@@ -47,7 +48,7 @@ private:
     Ui::DownloadScreen downloadUi;
     Ui::ConnectScreen connectUi;
     Ui::DisconnectScreen disconnectUi;
-    VpnController vpn;
+    std::unique_ptr<IVpnBackend> backend;
     CertificateDownloadService certificateService;
     ConnectionProgressWidget *progressWidget = nullptr;
     TrafficGraphWidget *trafficGraphWidget = nullptr;

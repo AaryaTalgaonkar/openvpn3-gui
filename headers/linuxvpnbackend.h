@@ -11,7 +11,7 @@ public:
                     const QString &password) override;
 
     void disconnectVpn() override;
-    bool isConnected() const override;
+    VpnConnectionState connectionState() const override;
 
 private slots:
     void onLogOutput();
@@ -21,5 +21,5 @@ private:
     QProcess sessionStart;
 
     QString configPath;
-    bool connectedState = false;
+    VpnConnectionState connectedState = VpnConnectionState::Disconnected;
 };

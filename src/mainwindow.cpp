@@ -121,12 +121,18 @@ MainWindow::MainWindow(QWidget *parent)
     connectUi.setupUi(ui->connectPage);
     disconnectUi.setupUi(ui->disconnectPage);
 
+#ifdef Q_OS_LINUX
+    backend = std::make_unique<LinuxVpnBackend>(this);
+#elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
+    backend = std::make_unique<WinMacVpnBackend>(this);
+#endif
+
     setupConnectingScreen();
 
     // Create a single traffic graph widget and add it to the appropriate host.
     trafficGraphWidget = new TrafficGraphWidget(nullptr);
     trafficGraphWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    if (vpn.isConnected()) {
+    if (backend->connectionState() == VpnConnectionState::Connected) {
         disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
     } else {
         connectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
@@ -185,32 +191,32 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::handleConnectButtonClicked);
     loadSavedCertificateState();
 
-    connect(&vpn, &VpnController::statusChanged,
+    connect(backend.get(), &IVpnBackend::statusChanged,
             this, [this](const QString &status) {
                 const bool busy = (status == "Connecting..." || status == "Disconnecting...");
                 connectUi.connectButton->setEnabled(!busy);
                 disconnectUi.disconnectButton->setEnabled(!busy);
             });
 
-    connect(&vpn, &VpnController::stateChanged,
+    connect(backend.get(), &IVpnBackend::stateChanged,
             this, &MainWindow::handleVpnStateChanged);
 
-        connect(&vpn, &VpnController::byteCountChanged,
+        connect(backend.get(), &IVpnBackend::byteCountChanged,
             this, &MainWindow::handleVpnByteCountChanged);
 
-            connect(&vpn, &VpnController::connectionInfoChanged,
+            connect(backend.get(), &IVpnBackend::connectionInfoChanged,
                 this, &MainWindow::handleVpnConnectionInfoChanged);
 
-    connect(&vpn, &VpnController::connected,
+    connect(backend.get(), &IVpnBackend::connected,
             this, &MainWindow::handleVpnConnected);
 
-    connect(&vpn, &VpnController::disconnected,
+    connect(backend.get(), &IVpnBackend::disconnected,
             this, &MainWindow::handleVpnDisconnected);
 
-    connect(&vpn, &VpnController::errorOccurred,
+    connect(backend.get(), &IVpnBackend::errorOccurred,
             this, &MainWindow::handleVpnError);
 
-        connect(&vpn, &VpnController::logLineReceived,
+        connect(backend.get(), &IVpnBackend::logLineReceived,
             this, [this](const QString &line) {
             recentConnectionLogs.push_back(line);
             });
@@ -372,7 +378,7 @@ void MainWindow::applyTheme(bool dark)
     void MainWindow::showConnectPage()
     {
         connectUi.modeStack->setCurrentWidget(connectUi.connectPage);
-        if (vpn.isConnected()) {
+        if (backend->connectionState() == VpnConnectionState::Connected) {
             ui->screenStack->setCurrentWidget(ui->disconnectPage);
             disconnectUi.connectionStatusTitle->setText(QStringLiteral("You are connected"));
             disconnectUi.connectionStatusSubtitle->setText(QStringLiteral("Live throughput is shown below"));
@@ -388,7 +394,7 @@ void MainWindow::applyTheme(bool dark)
         }
         connectUi.connectButton->setEnabled(true);
         disconnectUi.disconnectButton->setEnabled(true);
-        ui->statusbar->showMessage(vpn.isConnected() ? QStringLiteral("Status: Connected") : QStringLiteral("Status: Disconnected"));
+        ui->statusbar->showMessage(backend->connectionState() == VpnConnectionState::Connected ? QStringLiteral("Status: Connected") : QStringLiteral("Status: Disconnected"));
     }
 
     void MainWindow::showConnectingPage()
@@ -570,7 +576,7 @@ void MainWindow::applyTheme(bool dark)
 
     void MainWindow::handleVpnByteCountChanged(qulonglong uploadBytes, qulonglong downloadBytes)
     {
-        if (!vpn.isConnected()) {
+        if (backend->connectionState() != VpnConnectionState::Connected) {
             return;
         }
 
@@ -675,8 +681,8 @@ void MainWindow::handleDownloadButtonClicked()
 
 void MainWindow::handleConnectButtonClicked()
 {
-    if (vpn.isConnected()) {
-        vpn.disconnectVpn();
+    if (backend->connectionState() == VpnConnectionState::Connected) {
+        backend->disconnectVpn();
         return;
     }
 
@@ -690,7 +696,7 @@ bool MainWindow::promptForVpnPasswordAndConnect(const QString &message)
         return false;
     }
 
-    if (vpn.isConnected()) {
+    if (backend->connectionState() == VpnConnectionState::Connected) {
         return false;
     }
 
@@ -705,7 +711,7 @@ bool MainWindow::promptForVpnPasswordAndConnect(const QString &message)
 
     recentConnectionLogs.clear();
     showConnectingPage();
-    vpn.connectVpn(certificateService.downloadedOvpnPath(), password);
+    backend->connectVpn(certificateService.downloadedOvpnPath(), password);
     return true;
 }
 
@@ -781,8 +787,8 @@ void MainWindow::showConnectionLogs()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (vpn.isConnected()) {
-        vpn.disconnectVpn();
+    if (backend->connectionState() == VpnConnectionState::Connected) {
+        backend->disconnectVpn();
     }
         event->accept();
 }

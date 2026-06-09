@@ -34,7 +34,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
 
-        src/main.cpp src/vpncontroller.cpp
+        src/main.cpp
         src/certificatedownloadservice.cpp
 
 
@@ -54,7 +54,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         headers/linuxvpnbackend.h
         src/linuxvpnbackend.cpp
         headers/ivpnbackend.h
-        headers/vpncontroller.h
         src/winmacvpnbackend.cpp
 
 

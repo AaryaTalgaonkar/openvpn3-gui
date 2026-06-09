@@ -24,7 +24,7 @@ public:
     void updatePassword(const QString &password) override;
 
     void disconnectVpn() override;
-    bool isConnected() const override;
+    VpnConnectionState connectionState() const override;
 
 private slots:
     void onMgmtReadyRead();
@@ -33,7 +33,7 @@ private:
     QProcess *vpnProcess = nullptr;
     QTcpSocket mgmtSocket;
     QString mgmtPassword;
-    bool connectedState = false;
+    VpnConnectionState connectedState = VpnConnectionState::Disconnected;
 
     QString resolveOpenVpnBinary() const;
     void handleMgmtLine(const QByteArray &line);

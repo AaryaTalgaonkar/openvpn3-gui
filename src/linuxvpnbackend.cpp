@@ -9,7 +9,7 @@ LinuxVpnBackend::LinuxVpnBackend(QObject *parent)
 
 }
 
-bool LinuxVpnBackend::isConnected() const
+VpnConnectionState LinuxVpnBackend::connectionState() const
 {
     return connectedState;
 }
@@ -43,7 +43,7 @@ void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
 
 void LinuxVpnBackend::disconnectVpn()
 {
-    if (!connectedState)
+    if (connectedState != VpnConnectionState::Connected)
         return;
 
     emit statusChanged("Disconnecting...");
@@ -54,7 +54,7 @@ void LinuxVpnBackend::disconnectVpn()
                                       "--disconnect"
                                   });
 
-    connectedState = false;
+    connectedState = VpnConnectionState::Disconnected;
     emit disconnected();
     emit statusChanged("Connect");
 
@@ -72,7 +72,7 @@ void LinuxVpnBackend::onLogOutput()
             continue;
 
         if (line.contains("Client connected")) {
-            connectedState = true;
+            connectedState = VpnConnectionState::Connected;
             emit connected();
             emit statusChanged("Disconnect");
         }

@@ -114,7 +114,7 @@ WinMacVpnBackend::WinMacVpnBackend(QObject *parent)
             this, &WinMacVpnBackend::onMgmtReadyRead);
 }
 
-bool WinMacVpnBackend::isConnected() const
+VpnConnectionState WinMacVpnBackend::connectionState() const
 {
     return connectedState;
 }
@@ -182,7 +182,7 @@ void WinMacVpnBackend::updatePassword(const QString &password)
 
 void WinMacVpnBackend::disconnectVpn()
 {
-    if (mgmtSocket.state() != QAbstractSocket::ConnectedState || !connectedState)
+    if (mgmtSocket.state() != QAbstractSocket::ConnectedState || connectedState != VpnConnectionState::Connected)
         return;
 
     emit statusChanged("Disconnecting...");
@@ -244,17 +244,19 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
         const QStringList parts = statePayload.split(',');
 
         if (parts.size() >= 2) {
-            const QString state = parts.at(1).trimmed();
-            if (!state.isEmpty()) {
-                emit stateChanged(state);
-                if (state == QStringLiteral("CONNECTED")) {
-                    connectedState = true;
+            const QString stateStr = parts.at(1).trimmed();
+            if (!stateStr.isEmpty()) {
+                emit stateChanged(stateStr);
+                if (stateStr == QStringLiteral("CONNECTED")) {
+                    connectedState = VpnConnectionState::Connected;
                     emit connected();
                     emit statusChanged("Disconnect");
-                } else if (state == QStringLiteral("EXITING")) {
-                        connectedState = false;
-                        emit disconnected();
-                        emit statusChanged("Connect");
+                } else if (stateStr == QStringLiteral("EXITING")) {
+                    connectedState = VpnConnectionState::Disconnected;
+                    emit disconnected();
+                    emit statusChanged("Connect");
+                } else {
+                    connectedState = VpnConnectionState::Connecting;
                 }
             }
         }

@@ -3,6 +3,12 @@
 
 #include <QObject>
 
+enum class VpnConnectionState {
+    Disconnected,
+    Connecting,
+    Connected
+};
+
 struct ConnectionStepDefinition {
     const char *state;
     const char *icon;
@@ -24,7 +30,7 @@ public:
     virtual void updatePassword(const QString &password) = 0;
 
     virtual void disconnectVpn() = 0;
-    virtual bool isConnected() const = 0;
+    virtual VpnConnectionState connectionState() const = 0;
 
 signals:
     void connected();
