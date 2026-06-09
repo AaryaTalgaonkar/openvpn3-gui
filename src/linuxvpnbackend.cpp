@@ -1,6 +1,15 @@
 #include "linuxvpnbackend.h"
 #include <QDebug>
 
+const ConnectionStepDefinition LinuxVpnBackend::s_connectionSteps[] = {
+    {"SESSION_START", "🔗", "Starting VPN session"},
+    {"AUTH", "🔑", "Authenticating"},
+    {"CONNECTING", "↻", "Connecting"},
+    {"CONNECTED", "✓", "Connected"},
+};
+
+const int LinuxVpnBackend::s_connectionStepCount = sizeof(s_connectionSteps) / sizeof(s_connectionSteps[0]);
+
 LinuxVpnBackend::LinuxVpnBackend(QObject *parent)
     : IVpnBackend(parent)
 {
@@ -12,6 +21,21 @@ LinuxVpnBackend::LinuxVpnBackend(QObject *parent)
 VpnConnectionState LinuxVpnBackend::connectionState() const
 {
     return connectedState;
+}
+
+void LinuxVpnBackend::setCurrentConnectionStep(int stepIndex)
+{
+    if (m_currentConnectionStep != stepIndex) {
+        m_currentConnectionStep = stepIndex;
+        emit connectionStepChanged(stepIndex);
+    }
+}
+
+void LinuxVpnBackend::updatePassword(const QString &password)
+{
+    // LinuxVpnBackend authenticates immediately in connectVpn();
+    // no separate password update mechanism is needed.
+    Q_UNUSED(password);
 }
 
 void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
@@ -53,6 +77,8 @@ void LinuxVpnBackend::disconnectVpn()
                                   });
 
     connectedState = VpnConnectionState::Disconnected;
+    m_currentConnectionStep = -1;
+    emit connectionStepChanged(-1);
     emit disconnected();
     emit connectionStateChanged(connectedState);
 
@@ -69,21 +95,36 @@ void LinuxVpnBackend::onLogOutput()
         if (!line.contains("[STATUS]"))
             continue;
 
-        if (line.contains("Client connected")) {
+        // Map known status patterns to step indices
+        if (line.contains("Session state: CONNECTING") || line.contains("Connecting to")) {
+            setCurrentConnectionStep(0); // SESSION_START
+        }
+        else if (line.contains("Authenticating") || line.contains("Authentication")) {
+            setCurrentConnectionStep(1); // AUTH
+        }
+        else if (line.contains("client connecting") || line.contains("Establishing")) {
+            setCurrentConnectionStep(2); // CONNECTING
+        }
+        else if (line.contains("Client connected")) {
+            setCurrentConnectionStep(3); // CONNECTED (just before full connection)
             connectedState = VpnConnectionState::Connected;
             emit connected();
             emit connectionStateChanged(connectedState);
         }
         else if (line.contains("Authentication failed")) {
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Incorrect username/password");
         }
         else if (line.contains("parse_cert_crl_error")) {
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Error parsing CA certificate. The CA certificate may be corrupted or invalid.");
         }
         else if(line.contains("parse_pem")){
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Invalid certificate. Please check the certificate format.");
         }
         else if(line.contains("Certificate verification failed")){
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Certificate verification failed. Probably your certificate has expired.");
         }
     }

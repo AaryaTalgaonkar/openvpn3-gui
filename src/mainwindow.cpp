@@ -42,8 +42,8 @@ const ConnectionStepDefinition kConnectionSteps[] = {
 };
 constexpr int kConnectionStepCount = static_cast<int>(sizeof(kConnectionSteps) / sizeof(kConnectionSteps[0]));
 #elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
-const ConnectionStepDefinition* const kConnectionSteps = WinMacVpnBackend::connectionSteps();
-const int kConnectionStepCount = WinMacVpnBackend::connectionStepCount();
+const ConnectionStepDefinition* const kConnectionSteps = WinMacVpnBackend::kWinMacConnectionSteps;
+const int kConnectionStepCount = WinMacVpnBackend::kWinMacConnectionStepCount;
 #endif
 
 constexpr auto kLoginUrl = "https://newcert.iitd.ac.in/cgi-bin/usermanage/vpn3cert.cgi";

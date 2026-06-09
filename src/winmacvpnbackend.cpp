@@ -5,7 +5,9 @@
 
 #include <unordered_map>
 
-const ConnectionStepDefinition kWinMacConnectionSteps[] = {
+// --- WinMacVpnBackend static data definitions ---
+
+const ConnectionStepDefinition WinMacVpnBackend::kWinMacConnectionSteps[] = {
     {"RESOLVE", "🔎", "Resolving server address"},
     {"WAIT", "⌛", "Waiting for server response"},
     {"CONNECTING", "↻", "Connecting to server"},
@@ -13,7 +15,10 @@ const ConnectionStepDefinition kWinMacConnectionSteps[] = {
     {"ASSIGN_IP", "🧭", "Assigning IP address"},
 };
 
-constexpr int kWinMacConnectionStepCount = static_cast<int>(sizeof(kWinMacConnectionSteps) / sizeof(kWinMacConnectionSteps[0]));
+const int WinMacVpnBackend::kWinMacConnectionStepCount =
+    sizeof(WinMacVpnBackend::kWinMacConnectionSteps) / sizeof(WinMacVpnBackend::kWinMacConnectionSteps[0]);
+
+// --- Anonymous namespace helpers ---
 
 namespace {
 constexpr auto kMgmtHost = "127.0.0.1";
@@ -95,16 +100,6 @@ QString formatMgmtLogLine(const QByteArray &payload)
 
     return QStringLiteral("[%1] %2").arg(timestamp.toString(QStringLiteral("yyyy-MM-dd HH:mm:ss")), message);
 }
-}
-
-const ConnectionStepDefinition *WinMacVpnBackend::connectionSteps()
-{
-    return kWinMacConnectionSteps;
-}
-
-int WinMacVpnBackend::connectionStepCount()
-{
-    return kWinMacConnectionStepCount;
 }
 
 WinMacVpnBackend::WinMacVpnBackend(QObject *parent)
@@ -197,6 +192,24 @@ void WinMacVpnBackend::onMgmtReadyRead()
     }
 }
 
+int WinMacVpnBackend::stateToStepIndex(const QString &stateStr) const
+{
+    for (int i = 0; i < kWinMacConnectionStepCount; ++i) {
+        if (QString::fromUtf8(kWinMacConnectionSteps[i].state) == stateStr) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void WinMacVpnBackend::setCurrentConnectionStep(int stepIndex)
+{
+    if (m_currentConnectionStep != stepIndex) {
+        m_currentConnectionStep = stepIndex;
+        emit connectionStepChanged(stepIndex);
+    }
+}
+
 void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
 {
     qDebug().noquote() << "[MGMT]" << line;
@@ -248,16 +261,25 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
             if (!stateStr.isEmpty()) {
                 emit stateChanged(stateStr);
                 if (stateStr == QStringLiteral("CONNECTED")) {
+                    setCurrentConnectionStep(-1);
                     connectedState = VpnConnectionState::Connected;
                     emit connected();
                     emit connectionStateChanged(connectedState);
                 } else if (stateStr == QStringLiteral("EXITING")) {
+                    setCurrentConnectionStep(-1);
                     connectedState = VpnConnectionState::Disconnected;
                     emit disconnected();
                     emit connectionStateChanged(connectedState);
                 } else if (stateStr == QStringLiteral("RECONNECTING")) {
+                    setCurrentConnectionStep(-1);
                     connectedState = VpnConnectionState::Connecting;
                     emit connectionStateChanged(connectedState);
+                } else {
+                    // Map intermediate state strings (RESOLVE, WAIT, etc.) to step index
+                    const int stepIdx = stateToStepIndex(stateStr);
+                    if (stepIdx >= 0) {
+                        setCurrentConnectionStep(stepIdx);
+                    }
                 }
             }
         }

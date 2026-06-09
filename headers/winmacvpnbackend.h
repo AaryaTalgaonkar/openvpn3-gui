@@ -15,8 +15,9 @@ class WinMacVpnBackend : public IVpnBackend
 public:
     explicit WinMacVpnBackend(QObject *parent = nullptr);
 
-    static const ConnectionStepDefinition *connectionSteps();
-    static int connectionStepCount();
+    const ConnectionStepDefinition *connectionSteps() const override { return kWinMacConnectionSteps; }
+    int connectionStepCount() const override { return kWinMacConnectionStepCount; }
+    int currentConnectionStepIndex() const override { return m_currentConnectionStep; }
 
     void connectVpn(const QString &ovpnPath,
                     const QString &password) override;
@@ -26,6 +27,10 @@ public:
     void disconnectVpn() override;
     VpnConnectionState connectionState() const override;
 
+    /// Static definitions — consumers can reference these directly
+    static const ConnectionStepDefinition kWinMacConnectionSteps[];
+    static const int kWinMacConnectionStepCount;
+
 private slots:
     void onMgmtReadyRead();
 
@@ -34,10 +39,16 @@ private:
     QTcpSocket mgmtSocket;
     QString mgmtPassword;
     VpnConnectionState connectedState = VpnConnectionState::Disconnected;
+    int m_currentConnectionStep = -1;
 
     QString resolveOpenVpnBinary() const;
     void handleMgmtLine(const QByteArray &line);
     void handleConnectedLog(const QString &payloadStr);
+
+    /// Map an OpenVPN management state string (e.g. "RESOLVE", "WAIT") to a step index,
+    /// or -1 if it doesn't map to any step.
+    int stateToStepIndex(const QString &stateStr) const;
+    void setCurrentConnectionStep(int stepIndex);
 };
 
 #endif
