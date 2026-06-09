@@ -27,7 +27,6 @@ public:
     void disconnectVpn() override;
     VpnConnectionState connectionState() const override;
 
-    /// Static definitions — consumers can reference these directly
     static const ConnectionStepDefinition kWinMacConnectionSteps[];
     static const int kWinMacConnectionStepCount;
 
@@ -45,8 +44,6 @@ private:
     void handleMgmtLine(const QByteArray &line);
     void handleConnectedLog(const QString &payloadStr);
 
-    /// Map an OpenVPN management state string (e.g. "RESOLVE", "WAIT") to a step index,
-    /// or -1 if it doesn't map to any step.
     int stateToStepIndex(const QString &stateStr) const;
     void setCurrentConnectionStep(int stepIndex);
 };

@@ -3,9 +3,6 @@
 #include <QDateTime>
 #include <QStringList>
 
-#include <unordered_map>
-
-// --- WinMacVpnBackend static data definitions ---
 
 const ConnectionStepDefinition WinMacVpnBackend::kWinMacConnectionSteps[] = {
     {"RESOLVE", "🔎", "Resolving server address"},
@@ -18,7 +15,6 @@ const ConnectionStepDefinition WinMacVpnBackend::kWinMacConnectionSteps[] = {
 const int WinMacVpnBackend::kWinMacConnectionStepCount =
     sizeof(WinMacVpnBackend::kWinMacConnectionSteps) / sizeof(WinMacVpnBackend::kWinMacConnectionSteps[0]);
 
-// --- Anonymous namespace helpers ---
 
 namespace {
 constexpr auto kMgmtHost = "127.0.0.1";
@@ -29,54 +25,42 @@ const QStringList kIgnoredLogPrefixes = {
     QStringLiteral("ERROR:")
 };
 
-const std::unordered_map<std::string, std::string> kFatalEventText = {
-    {"auth-failure:", "The password that you entered is incorrect. Repeatedly entering an incorrect password may result in a temporary block. Please try again."},
-    {"CERT_VERIFY_FAIL", "The certificate seems to have expired. Please contact CSC support to renew your certificate."},
-    {"TLS_VERSION_MIN", "The server does not support the required TLS version."},
-    {"TLS_ALERT_PROTOCOL_VERSION", "A secure protocol version could not be negotiated with the server."},
-    {"TLS_ALERT_UNKNOWN_CA", "The certificate authority is not trusted by this client."},
-    {"TLS_ALERT_MISC", "A TLS certificate or handshake error occurred."},
-    {"TLS_ALERT_HANDSHAKE_FAILURE", "Secure TLS handshake failed."},
-    {"TLS_ALERT_CERTIFICATE_EXPIRED", "A certificate used in the connection has expired."},
-    {"TLS_ALERT_CERTIFICATE_REVOKED", "A certificate used in the connection has been revoked."},
-    {"TLS_ALERT_BAD_CERTIFICATE", "A certificate used in the connection is invalid."},
-    {"TLS_ALERT_UNSUPPORTED_CERTIFICATE", "The certificate type or key usage is not supported."},
-    {"TLS_SIGALG_DISALLOWED_OR_UNSUPPORTED", "The certificate signature algorithm is not allowed or not supported."},
-    {"CLIENT_HALT", "The server requested that the client stop."},
-    {"CLIENT_SETUP", "Client setup failed. Please review your VPN profile and local settings."},
-    {"TUN_HALT", "The virtual network adapter was stopped."},
-    {"CONNECTION_TIMEOUT", "Connection timed out while contacting the VPN server. Please check your network connection and try again."},
-    {"INACTIVE_TIMEOUT", "Connection closed due to inactivity timeout."},
-    {"DYNAMIC_CHALLENGE", "Additional verification is required to continue sign-in."},
-    {"PROXY_NEED_CREDS", "Proxy authentication is required."},
-    {"PROXY_ERROR", "A proxy error prevented the VPN connection."},
-    {"TUN_SETUP_FAILED", "Failed to configure the virtual network adapter."},
-    {"TUN_IFACE_CREATE", "Failed to create the virtual network adapter."},
-    {"TUN_IFACE_DISABLED", "The virtual network adapter is disabled."},
-    {"EPKI_ERROR", "Could not access the external certificate/key provider."},
-    {"EPKI_INVALID_ALIAS", "The selected external certificate/key alias is invalid."},
-    {"RELAY_ERROR", "Relay setup failed."},
-    {"COMPRESS_ERROR", "Compression/decompression failed."},
-    {"NTLM_MISSING_CRYPTO", "Required cryptographic support for NTLM is not available."},
-    {"SESSION_EXPIRED", "Your VPN session has expired. Please sign in again."},
-    {"NEED_CREDS", "Credentials are required to continue."},
-};
-
-QString friendlyFatalMessageFromLine(const QByteArray &line)
+QString friendlyFatalMessageFromLine(const QByteArray &line, const QString &currentOperation)
 {
     const QString lineStr = QString::fromUtf8(line).trimmed();
 
     const int firstColon = lineStr.indexOf(':');
-    const QString afterPrefix = firstColon >= 0 ? lineStr.mid(firstColon + 1).trimmed() : lineStr;
-    const int commaPos = afterPrefix.indexOf(',');
-    const QString eventName = (commaPos >= 0 ? afterPrefix.left(commaPos) : afterPrefix).trimmed();
-
-    const auto it = kFatalEventText.find(eventName.toStdString());
-    if (it != kFatalEventText.end()) {
-        return QString::fromStdString(it->second);
+    if (firstColon < 0) {
+        return lineStr;
     }
 
-    return lineStr;
+    const QString afterPrefix = lineStr.mid(firstColon + 1).trimmed();
+
+    const int eventColon = afterPrefix.indexOf(':');
+    const QString eventType = (eventColon >= 0)
+        ? afterPrefix.left(eventColon).trimmed()
+        : afterPrefix;
+
+    if (eventType == QStringLiteral("auth-failure")) {
+        return QStringLiteral("The password that you entered is incorrect. Repeatedly entering an incorrect password may result in a temporary block. Please try again.");
+    }
+
+    if (eventType == QStringLiteral("CONNECTION_TIMEOUT")) {
+        if (currentOperation == QStringLiteral("RESOLVE")) {
+            return QStringLiteral("The DNS resolution could not be done. Please check your internet connection and try once again.");
+        }
+
+        if (currentOperation == QStringLiteral("WAIT")) {
+            return QStringLiteral("The server could not be reached or it failed to respond. Common causes are :\n"
+                                 "i. You are already on IITD network. Please connect externally.\n"
+                                 "ii. You are behind a firewall blocking port 1194. Please try to connect with your mobile hotspot instead.\n"
+                                 "iii. The certificate has expired. Please download it again.");
+        }
+
+        return QStringLiteral("The connection timed out while contacting the server. Please try again.");
+    }
+
+    return afterPrefix;
 }
 
 QString formatMgmtLogLine(const QByteArray &payload)
@@ -251,7 +235,11 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
             mgmtSocket.write(QString("password Auth %1\n").arg(mgmtPassword).toUtf8());
         }
     } else if (tag == QStringLiteral("FATAL")) {
-        emit errorOccurred(friendlyFatalMessageFromLine(line));
+        QString operation;
+        if (m_currentConnectionStep >= 0 && m_currentConnectionStep < kWinMacConnectionStepCount) {
+            operation = QString::fromUtf8(kWinMacConnectionSteps[m_currentConnectionStep].state);
+        }
+        emit errorOccurred(friendlyFatalMessageFromLine(line, operation));
     } else if (tag == QStringLiteral("STATE")) {
         const QString statePayload = QString::fromUtf8(payload);
         const QStringList parts = statePayload.split(',');
