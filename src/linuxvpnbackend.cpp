@@ -33,8 +33,6 @@ void LinuxVpnBackend::setCurrentConnectionStep(int stepIndex)
 
 void LinuxVpnBackend::updatePassword(const QString &password)
 {
-    // LinuxVpnBackend authenticates immediately in connectVpn();
-    // no separate password update mechanism is needed.
     Q_UNUSED(password);
 }
 
@@ -48,20 +46,16 @@ void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
     connectedState = VpnConnectionState::Connecting;
     emit connectionStateChanged(connectedState);
 
-    // 1️⃣ Start log watcher FIRST
-    logProcess.start("openvpn3", {
+    logProcess.start("iitdvpn", {
                                      "log",
-                                     "--config", ovpnPath,
-                                     "--log-level", "0"
+                                     "--config", ovpnPath
                                  });
 
-    // 2️⃣ Start session
-    sessionStart.start("openvpn3", {
+    sessionStart.start("iitdvpn", {
                                        "session-start",
                                        "--config", ovpnPath
                                    });
 
-    // 3️⃣ Provide credentials
     sessionStart.write(QString("%1\n").arg(password).toUtf8());
 }
 
@@ -70,7 +64,7 @@ void LinuxVpnBackend::disconnectVpn()
     if (connectedState != VpnConnectionState::Connected)
         return;
 
-    QProcess::execute("openvpn3", {
+    QProcess::execute("iitdvpn", {
                                       "session-manage",
                                       "--config", configPath,
                                       "--disconnect"

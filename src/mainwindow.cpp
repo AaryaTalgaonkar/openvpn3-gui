@@ -129,23 +129,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupConnectingScreen();
 
-    // Create a single traffic graph widget and add it to the appropriate host.
+    // Create a single traffic graph widget and add it to the disconnect screen.
     trafficGraphWidget = new TrafficGraphWidget(nullptr);
     trafficGraphWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    if (backend->connectionState() == VpnConnectionState::Connected) {
-        disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
-    } else {
-        connectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
-    }
+    disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
 
-    connectUi.connectedTrafficFrame->setVisible(false);
     disconnectUi.connectedTrafficFrame->setVisible(false);
-    if (connectUi.uploadStatCard) connectUi.uploadStatCard->setVisible(false);
-    if (connectUi.downloadStatCard) connectUi.downloadStatCard->setVisible(false);
     if (disconnectUi.uploadStatCard) disconnectUi.uploadStatCard->setVisible(false);
     if (disconnectUi.downloadStatCard) disconnectUi.downloadStatCard->setVisible(false);
-    connectUi.uploadSpeedValue->setText(QStringLiteral("--"));
-    connectUi.downloadSpeedValue->setText(QStringLiteral("--"));
     disconnectUi.uploadSpeedValue->setText(QStringLiteral("--"));
     disconnectUi.downloadSpeedValue->setText(QStringLiteral("--"));
 
@@ -265,7 +256,6 @@ void MainWindow::setInitialFlow()
     downloadUi.downloadButton->setEnabled(true);
     downloadUi.downloadButton->setText("Download");
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
-    connectUi.connectedTrafficFrame->setVisible(false);
     disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
     disconnectUi.connectedTrafficFrame->setVisible(false);
     resetTrafficIndicators();
@@ -379,7 +369,6 @@ void MainWindow::applyTheme(bool dark)
             connectUi.connectionStatusTitle->setText(QStringLiteral("You are not connected"));
             connectUi.connectionStatusSubtitle->setText(QStringLiteral("Connect to access internal resources of IIT Delhi"));
             connectUi.connectButton->setText(QStringLiteral("⏻"));
-            connectUi.connectedTrafficFrame->setVisible(false);
             resetTrafficIndicators();
         }
         connectUi.connectButton->setEnabled(true);
@@ -531,10 +520,6 @@ void MainWindow::applyTheme(bool dark)
             spinnerTimer->stop();
             resetConnectingIndicators();
             resetTrafficIndicators();
-            if (trafficGraphWidget) {
-                trafficGraphWidget->setParent(nullptr);
-                connectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
-            }
             showConnectPage();
             break;
 
@@ -652,15 +637,6 @@ void MainWindow::handleVpnConnectionInfoChanged(const QString &remote, const QSt
     const QString serverNameLine = (!serverName.isEmpty() && serverName != QStringLiteral("—")) ? serverName : QStringLiteral("—");
 
     // Client detail columns (left: user IP, right: tunnel)
-    if (connectUi.clientNameLabel) connectUi.clientNameLabel->setText(clientName);
-    if (connectUi.clientDetailsCol1Label) connectUi.clientDetailsCol1Label->setText(userIp);
-    if (connectUi.clientDetailsCol2Label) connectUi.clientDetailsCol2Label->setText(tunnel);
-
-    if (connectUi.serverNameLabel) connectUi.serverNameLabel->setText(serverNameLine);
-    if (connectUi.serverDetailsCol1Label) connectUi.serverDetailsCol1Label->setText(serverIp);
-    if (connectUi.serverDetailsCol2Label) connectUi.serverDetailsCol2Label->setText(serverPort);
-    if (connectUi.serverDetailsCol3Label) connectUi.serverDetailsCol3Label->setText(protoText);
-
     if (disconnectUi.clientNameLabel) disconnectUi.clientNameLabel->setText(clientName);
     if (disconnectUi.clientDetailsCol1Label) disconnectUi.clientDetailsCol1Label->setText(userIp);
     if (disconnectUi.clientDetailsCol2Label) disconnectUi.clientDetailsCol2Label->setText(tunnel);

@@ -124,7 +124,7 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
 
     QStringList args {
         "--config", ovpnPath,
-        "--connection-timeout", "30",
+        "--connection-timeout", "10",
         "--management", "127.0.0.1", "7505",
         "--management-query-passwords",
         "--auth-use-cert-cn-username"
