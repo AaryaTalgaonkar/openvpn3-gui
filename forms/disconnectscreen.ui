@@ -494,25 +494,8 @@
                   <property name="spacing">
                    <number>2</number>
                   </property>
-                  <item>
-                   <widget class="QLabel" name="uploadStatTitle">
-                    <property name="font">
-                     <font>
-                      <family>Titillium Web</family>
-                      <pointsize>9</pointsize>
-                      <bold>true</bold>
-                     </font>
-                    </property>
-                    <property name="text">
-                     <string>Upload</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignmentFlag::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="uploadSpeedValue">
+                   <item>
+                    <widget class="QLabel" name="uploadSpeedValue">
                     <property name="font">
                      <font>
                       <family>Titillium Web</family>
@@ -552,25 +535,8 @@
                   <property name="spacing">
                    <number>2</number>
                   </property>
-                  <item>
-                   <widget class="QLabel" name="downloadStatTitle">
-                    <property name="font">
-                     <font>
-                      <family>Titillium Web</family>
-                      <pointsize>9</pointsize>
-                      <bold>true</bold>
-                     </font>
-                    </property>
-                    <property name="text">
-                     <string>Download</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignmentFlag::AlignCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="downloadSpeedValue">
+                   <item>
+                    <widget class="QLabel" name="downloadSpeedValue">
                     <property name="font">
                      <font>
                       <family>Titillium Web</family>
