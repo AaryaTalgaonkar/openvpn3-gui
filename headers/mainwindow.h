@@ -20,6 +20,7 @@ class QTimer;
 #include "ui_mainwindow.h"
 #include "ui_downloadscreen.h"
 #include "ui_connectscreen.h"
+#include "ui_connectingscreen.h"
 #include "ui_disconnectscreen.h"
 
 class MainWindow : public QMainWindow
@@ -46,6 +47,7 @@ private:
     Ui::MainWindow *ui;
     Ui::DownloadScreen downloadUi;
     Ui::ConnectScreen connectUi;
+    Ui::ConnectingScreen connectingUi;
     Ui::DisconnectScreen disconnectUi;
     std::unique_ptr<IVpnBackend> backend;
     CertificateDownloadService certificateService;

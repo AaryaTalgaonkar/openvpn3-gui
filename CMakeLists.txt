@@ -50,6 +50,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         forms/mainwindow.ui
         forms/downloadscreen.ui
         forms/connectscreen.ui
+        forms/connectingscreen.ui
         forms/disconnectscreen.ui
         headers/linuxvpnbackend.h
         src/linuxvpnbackend.cpp

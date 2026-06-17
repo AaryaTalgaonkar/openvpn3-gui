@@ -119,6 +119,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     downloadUi.setupUi(ui->downloadPage);
     connectUi.setupUi(ui->connectPage);
+    connectingUi.setupUi(ui->connectingPage);
     disconnectUi.setupUi(ui->disconnectPage);
 
 #ifdef Q_OS_LINUX
@@ -316,11 +317,11 @@ void MainWindow::applyTheme(bool dark)
 
     void MainWindow::setupConnectingScreen()
     {
-        progressWidget = new ConnectionProgressWidget(connectUi.progressRingHost);
+        progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);
         progressWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        connectUi.progressRingHostLayout->addWidget(progressWidget, 0, Qt::AlignCenter);
+        connectingUi.progressRingHostLayout->addWidget(progressWidget, 0, Qt::AlignCenter);
 
-        while (QLayoutItem *item = connectUi.stepsLayout->takeAt(0)) {
+        while (QLayoutItem *item = connectingUi.stepsLayout->takeAt(0)) {
             delete item->widget();
             delete item;
         }
@@ -328,7 +329,7 @@ void MainWindow::applyTheme(bool dark)
 
         for (int i = 0; i < kConnectionStepCount; ++i) {
             const auto &step = kConnectionSteps[i];
-            auto *row = new QWidget(connectUi.stepsFrame);
+            auto *row = new QWidget(connectingUi.stepsFrame);
             auto *rowLayout = new QHBoxLayout(row);
             rowLayout->setContentsMargins(0, 0, 0, 0);
             rowLayout->setSpacing(10);
@@ -347,17 +348,15 @@ void MainWindow::applyTheme(bool dark)
             rowLayout->addWidget(iconLabel);
             rowLayout->addWidget(titleLabel, 1);
             rowLayout->addWidget(statusLabel);
-            connectUi.stepsLayout->addWidget(row);
+            connectingUi.stepsLayout->addWidget(row);
             stepStatusLabels.push_back(statusLabel);
         }
 
-        connectUi.modeStack->setCurrentWidget(connectUi.connectPage);
         resetConnectingIndicators();
     }
 
     void MainWindow::showConnectPage()
     {
-        connectUi.modeStack->setCurrentWidget(connectUi.connectPage);
         if (backend->connectionState() == VpnConnectionState::Connected) {
             ui->screenStack->setCurrentWidget(ui->disconnectPage);
             disconnectUi.connectionStatusTitle->setText(QStringLiteral("You are connected"));
@@ -378,8 +377,7 @@ void MainWindow::applyTheme(bool dark)
 
     void MainWindow::showConnectingPage()
     {
-        ui->screenStack->setCurrentWidget(ui->connectPage);
-        connectUi.modeStack->setCurrentWidget(connectUi.connectingPage);
+        ui->screenStack->setCurrentWidget(ui->connectingPage);
         resetConnectingIndicators();
         ui->statusbar->showMessage(QStringLiteral("Status: Connecting"));
         spinnerTimer->start(140);
@@ -508,7 +506,7 @@ void MainWindow::applyTheme(bool dark)
     void MainWindow::handleVpnStateChanged(const QString &state)
     {
         updateConnectionStep(state);
-        if (stepIndexForState(state) >= 0 && !connectUi.modeStack->currentWidget()->objectName().contains("connecting", Qt::CaseInsensitive)) {
+        if (stepIndexForState(state) >= 0 && ui->screenStack->currentWidget() != ui->connectingPage) {
             showConnectingPage();
         }
     }
