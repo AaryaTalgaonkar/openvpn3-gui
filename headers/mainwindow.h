@@ -57,6 +57,7 @@ private:
     TrafficGraphWidget *trafficGraphWidget = nullptr;
     QVector<QLabel *> stepStatusLabels;
     QTimer *spinnerTimer = nullptr;
+    QTimer *googleRetryTimer = nullptr;
     QStringList spinnerFrames;
     QStringList recentConnectionLogs;
     int spinnerFrameIndex = 0;
@@ -93,6 +94,7 @@ private:
     void updateCertificateInfoBox();
     void handleGoogleTimeReply(QNetworkReply *reply);
     void updateCertValidityDisplay(const QDateTime &now);
+    void retryFetchGoogleTime();
     void refreshSpinnerFrame();
     int stepIndexForState(const QString &state) const;
     void updateStepRows(int currentIndex);

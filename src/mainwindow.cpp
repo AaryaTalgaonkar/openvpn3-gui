@@ -245,6 +245,10 @@ MainWindow::MainWindow(QWidget *parent)
     spinnerTimer = new QTimer(this);
     connect(spinnerTimer, &QTimer::timeout, this, &MainWindow::refreshSpinnerFrame);
 
+    googleRetryTimer = new QTimer(this);
+    googleRetryTimer->setInterval(5000); // Retry every 5 seconds
+    connect(googleRetryTimer, &QTimer::timeout, this, &MainWindow::retryFetchGoogleTime);
+
     loadSavedCertificateState();
 }
 
@@ -466,9 +470,9 @@ void MainWindow::applyTheme(bool dark)
         connectUi.certStartDateLabel->setText(certEffectiveDate.toString(dateFormat));
         connectUi.certEndDateLabel->setText(certExpiryDate.toString(dateFormat));
 
-        // Reset progress bar until we get real time from Google
-        connectUi.certValidityProgress->setValue(0);
-        connectUi.certTimeRemainingLabel->setText(QStringLiteral("Fetching time..."));
+        // Show time remaining using local system time initially;
+        // will be refined when Google time arrives below.
+        updateCertValidityDisplay(QDateTime::currentDateTimeUtc());
 
         // Make a HEAD request to Google to get the Date header
         auto *googleManager = new QNetworkAccessManager(this);
@@ -488,9 +492,13 @@ void MainWindow::applyTheme(bool dark)
     void MainWindow::handleGoogleTimeReply(QNetworkReply *reply)
     {
         if (reply->error() != QNetworkReply::NoError) {
-            // Fallback: use local system time
+            // Fallback: use local system time, retry when back online
             const QDateTime localNow = QDateTime::currentDateTimeUtc();
             updateCertValidityDisplay(localNow);
+            // Start retry timer to fetch real time when network becomes available
+            if (googleRetryTimer && !googleRetryTimer->isActive()) {
+                googleRetryTimer->start();
+            }
             return;
         }
 
@@ -498,6 +506,10 @@ void MainWindow::applyTheme(bool dark)
         if (dateHeader.isEmpty()) {
             const QDateTime localNow = QDateTime::currentDateTimeUtc();
             updateCertValidityDisplay(localNow);
+            // Start retry timer to fetch real time when network becomes available
+            if (googleRetryTimer && !googleRetryTimer->isActive()) {
+                googleRetryTimer->start();
+            }
             return;
         }
 
@@ -509,10 +521,41 @@ void MainWindow::applyTheme(bool dark)
         if (!googleTime.isValid()) {
             const QDateTime localNow = QDateTime::currentDateTimeUtc();
             updateCertValidityDisplay(localNow);
+            // Start retry timer to fetch real time when network becomes available
+            if (googleRetryTimer && !googleRetryTimer->isActive()) {
+                googleRetryTimer->start();
+            }
             return;
         }
 
+        // Successfully got Google time — stop retry timer and update display
+        if (googleRetryTimer && googleRetryTimer->isActive()) {
+            googleRetryTimer->stop();
+        }
         updateCertValidityDisplay(googleTime);
+    }
+
+    void MainWindow::retryFetchGoogleTime()
+    {
+        // Only retry if we still don't have valid certificate dates or just need to re-fetch
+        if (!certEffectiveDate.isValid() || !certExpiryDate.isValid()) {
+            googleRetryTimer->stop();
+            return;
+        }
+
+        // Make a HEAD request to Google to get the Date header
+        auto *googleManager = new QNetworkAccessManager(this);
+        connect(googleManager, &QNetworkAccessManager::finished,
+                this, [this, googleManager](QNetworkReply *reply) {
+                    handleGoogleTimeReply(reply);
+                    reply->deleteLater();
+                    googleManager->deleteLater();
+                });
+
+        QNetworkRequest request(QUrl(QStringLiteral("https://www.google.com")));
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                             QNetworkRequest::NoLessSafeRedirectPolicy);
+        googleManager->head(request);
     }
 
     void MainWindow::updateCertValidityDisplay(const QDateTime &now)
