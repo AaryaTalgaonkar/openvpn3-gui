@@ -6,12 +6,14 @@
 #include <QVector>
 #include <QStringList>
 #include <QElapsedTimer>
+#include <QDateTime>
 
 class QByteArray;
 class QNetworkReply;
 class QUrl;
 class QLabel;
 class QTimer;
+class QProgressBar;
 
 #include "ivpnbackend.h"
 #include "certificatedownloadservice.h"
@@ -66,6 +68,8 @@ private:
     bool trafficSampleInitialized = false;
     QSettings settings;
 
+    QDateTime certEffectiveDate;
+    QDateTime certExpiryDate;
 
     void setInitialFlow();
     void setConnectFlow();
@@ -86,6 +90,9 @@ private:
     void resetTrafficIndicators();
     QString formatThroughput(qreal bytesPerSecond) const;
     void updateConnectionStep(const QString &state);
+    void updateCertificateInfoBox();
+    void handleGoogleTimeReply(QNetworkReply *reply);
+    void updateCertValidityDisplay(const QDateTime &now);
     void refreshSpinnerFrame();
     int stepIndexForState(const QString &state) const;
     void updateStepRows(int currentIndex);

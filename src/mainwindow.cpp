@@ -26,6 +26,9 @@
 #include <QPushButton>
 #include <QUrlQuery>
 #include <QElapsedTimer>
+#include <QSslCertificate>
+#include <QSslConfiguration>
+#include <QNetworkAccessManager>
 
 #ifdef Q_OS_LINUX
 #include "linuxvpnbackend.h"
@@ -265,6 +268,7 @@ void MainWindow::setInitialFlow()
 void MainWindow::setConnectFlow()
 {
     ui->screenStack->setCurrentWidget(ui->connectPage);
+    updateCertificateInfoBox();
     showConnectPage();
 }
 
@@ -404,6 +408,171 @@ void MainWindow::applyTheme(bool dark)
             trafficGraphWidget->clearSamples();
         }
         // speeds are shown on the graph overlay; no separate stat labels needed
+    }
+
+    void MainWindow::updateCertificateInfoBox()
+    {
+        const QString ovpnPath = certificateService.downloadedOvpnPath();
+        if (ovpnPath.isEmpty()) {
+            connectUi.certUsernameLabel->setText(QStringLiteral("—"));
+            connectUi.certInstituteLabel->setText(QStringLiteral("—"));
+            connectUi.certEmailLabel->setText(QStringLiteral("—"));
+            connectUi.certStartDateLabel->setText(QStringLiteral("—"));
+            connectUi.certEndDateLabel->setText(QStringLiteral("—"));
+            connectUi.certTimeRemainingLabel->setText(QStringLiteral("—"));
+            connectUi.certValidityProgress->setValue(0);
+            return;
+        }
+
+        QFile file(ovpnPath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            return;
+        }
+
+        const QString content = QString::fromUtf8(file.readAll());
+        file.close();
+
+        // Extract the <cert> ... </cert> section
+        QRegularExpression certRegex(QStringLiteral("<cert>\\s*(-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----)\\s*</cert>"),
+                                     QRegularExpression::CaseInsensitiveOption);
+        const QRegularExpressionMatch certMatch = certRegex.match(content);
+        if (!certMatch.hasMatch()) {
+            return;
+        }
+
+        const QString pemData = certMatch.captured(1).trimmed();
+
+        const QList<QSslCertificate> certs = QSslCertificate::fromData(pemData.toUtf8(), QSsl::Pem);
+        if (certs.isEmpty()) {
+            return;
+        }
+
+        const QSslCertificate &cert = certs.first();
+
+        // Extract subject details
+        const QString cn = cert.subjectInfo(QSslCertificate::CommonName).value(0, QStringLiteral("—"));
+        const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
+        const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
+
+        connectUi.certUsernameLabel->setText(cn);
+        connectUi.certInstituteLabel->setText(org);
+        connectUi.certEmailLabel->setText(email);
+
+        // Store validity dates for later use with Google time
+        certEffectiveDate = cert.effectiveDate().toUTC();
+        certExpiryDate = cert.expiryDate().toUTC();
+
+        const QString dateFormat = QStringLiteral("dd MMM yyyy");
+        connectUi.certStartDateLabel->setText(certEffectiveDate.toString(dateFormat));
+        connectUi.certEndDateLabel->setText(certExpiryDate.toString(dateFormat));
+
+        // Reset progress bar until we get real time from Google
+        connectUi.certValidityProgress->setValue(0);
+        connectUi.certTimeRemainingLabel->setText(QStringLiteral("Fetching time..."));
+
+        // Make a HEAD request to Google to get the Date header
+        auto *googleManager = new QNetworkAccessManager(this);
+        connect(googleManager, &QNetworkAccessManager::finished,
+                this, [this, googleManager](QNetworkReply *reply) {
+                    handleGoogleTimeReply(reply);
+                    reply->deleteLater();
+                    googleManager->deleteLater();
+                });
+
+        QNetworkRequest request(QUrl(QStringLiteral("https://www.google.com")));
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                             QNetworkRequest::NoLessSafeRedirectPolicy);
+        googleManager->head(request);
+    }
+
+    void MainWindow::handleGoogleTimeReply(QNetworkReply *reply)
+    {
+        if (reply->error() != QNetworkReply::NoError) {
+            // Fallback: use local system time
+            const QDateTime localNow = QDateTime::currentDateTimeUtc();
+            updateCertValidityDisplay(localNow);
+            return;
+        }
+
+        const QString dateHeader = reply->rawHeader("Date");
+        if (dateHeader.isEmpty()) {
+            const QDateTime localNow = QDateTime::currentDateTimeUtc();
+            updateCertValidityDisplay(localNow);
+            return;
+        }
+
+        // Parse the RFC 1123 date from Google's headers
+        // Example: "Thu, 18 Jun 2026 12:30:00 GMT"
+        QDateTime googleTime = QDateTime::fromString(dateHeader, QStringLiteral("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
+        googleTime.setTimeZone(QTimeZone::UTC);
+
+        if (!googleTime.isValid()) {
+            const QDateTime localNow = QDateTime::currentDateTimeUtc();
+            updateCertValidityDisplay(localNow);
+            return;
+        }
+
+        updateCertValidityDisplay(googleTime);
+    }
+
+    void MainWindow::updateCertValidityDisplay(const QDateTime &now)
+    {
+        if (!certEffectiveDate.isValid() || !certExpiryDate.isValid()) {
+            return;
+        }
+
+        // Calculate total validity span
+        const qint64 totalSecs = certEffectiveDate.secsTo(certExpiryDate);
+        if (totalSecs <= 0) {
+            connectUi.certValidityProgress->setValue(100);
+            connectUi.certTimeRemainingLabel->setText(QStringLiteral("Expired"));
+            return;
+        }
+
+        // Calculate elapsed seconds since effective date
+        qint64 elapsedSecs = certEffectiveDate.secsTo(now);
+        if (elapsedSecs < 0) {
+            elapsedSecs = 0;
+        }
+
+        int progressPercent = 0;
+        if (elapsedSecs >= totalSecs) {
+            progressPercent = 100;
+        } else {
+            progressPercent = static_cast<int>((elapsedSecs * 100) / totalSecs);
+        }
+        connectUi.certValidityProgress->setValue(progressPercent);
+
+        // Calculate time remaining from now until expiry
+        if (now >= certExpiryDate) {
+            connectUi.certTimeRemainingLabel->setText(QStringLiteral("Expired"));
+        } else {
+            const qint64 secsRemaining = now.secsTo(certExpiryDate);
+            const qint64 daysRemaining = secsRemaining / 86400;
+            const qint64 hoursRemaining = (secsRemaining % 86400) / 3600;
+            const qint64 monthsRemaining = daysRemaining / 30;
+            const qint64 remainingDays = daysRemaining % 30;
+
+            QString timeStr;
+            if (monthsRemaining > 0) {
+                timeStr = QStringLiteral("%1 month%2 %3 day%4")
+                              .arg(monthsRemaining)
+                              .arg(monthsRemaining == 1 ? QString() : QStringLiteral("s"))
+                              .arg(remainingDays)
+                              .arg(remainingDays == 1 ? QString() : QStringLiteral("s"));
+            } else if (daysRemaining > 0) {
+                timeStr = QStringLiteral("%1 day%2 %3 hour%4")
+                              .arg(daysRemaining)
+                              .arg(daysRemaining == 1 ? QString() : QStringLiteral("s"))
+                              .arg(hoursRemaining)
+                              .arg(hoursRemaining == 1 ? QString() : QStringLiteral("s"));
+            } else {
+                timeStr = QStringLiteral("%1 hour%2")
+                              .arg(hoursRemaining)
+                              .arg(hoursRemaining == 1 ? QString() : QStringLiteral("s"));
+            }
+            connectUi.certTimeRemainingLabel->setText(timeStr);
+        }
     }
 
     QString MainWindow::formatThroughput(qreal bytesPerSecond) const
