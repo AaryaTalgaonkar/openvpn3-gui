@@ -151,7 +151,6 @@
     </item>
     <item>
      <widget class="QStackedWidget" name="screenStack">
-    <widget class="QWidget" name="downloadPage"/>
     <widget class="QWidget" name="connectPage"/>
     <widget class="QWidget" name="connectingPage"/>
     <widget class="QWidget" name="disconnectPage"/>

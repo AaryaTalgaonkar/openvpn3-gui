@@ -82,7 +82,7 @@ bool getCredentialsFromDialog(QWidget *parent, const QString &title, const QStri
     }
 
     auto *userEdit = new QLineEdit(&dialog);
-    userEdit->setPlaceholderText("Username (e.g. cs5xxxxxx)");
+    userEdit->setPlaceholderText("Username");
     layout->addWidget(userEdit);
 
     auto *passEdit = new QLineEdit(&dialog);
@@ -149,7 +149,6 @@ MainWindow::MainWindow(QWidget *parent)
     , settings("IIT Delhi", "IITDelhiVPN")
 {
     ui->setupUi(this);
-    downloadUi.setupUi(ui->downloadPage);
     connectUi.setupUi(ui->connectPage);
     connectingUi.setupUi(ui->connectingPage);
     disconnectUi.setupUi(ui->disconnectPage);
@@ -178,8 +177,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connectUi.connectButton->setCheckable(false);
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
-    downloadUi.downloadButton->setEnabled(true);
-    connect(downloadUi.downloadButton, &QPushButton::clicked,
+    connect(connectUi.generateButton, &QPushButton::clicked,
             this, &MainWindow::handleDownloadButtonClicked);
         connect(connectUi.connectButton, &QPushButton::clicked,
             this, &MainWindow::handleConnectButtonClicked);
@@ -219,8 +217,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(&certificateService, &CertificateDownloadService::busyChanged,
             this, [this](bool busy) {
-                downloadUi.downloadButton->setEnabled(!busy);
-                downloadUi.downloadButton->setText(busy ? "Downloading..." : "Download");
+                connectUi.generateButton->setEnabled(!busy);
+                connectUi.generateButton->setText(busy ? "Downloading..." : "generate");
             });
 
     connect(&certificateService, &CertificateDownloadService::statusMessage,
@@ -260,10 +258,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::setInitialFlow()
 {
-    ui->screenStack->setCurrentWidget(ui->downloadPage);
-    downloadUi.contentFrame->setStyleSheet(QStringLiteral("QFrame#contentFrame { border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; padding: 10px; }"));
-    downloadUi.downloadButton->setEnabled(true);
-    downloadUi.downloadButton->setText("Download");
+    ui->screenStack->setCurrentWidget(ui->connectPage);
+    connectUi.certInfoStack->setCurrentIndex(0); // Show "no certificate" page
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
     disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
     disconnectUi.connectedTrafficFrame->setVisible(false);
@@ -419,15 +415,11 @@ void MainWindow::applyTheme(bool dark)
     {
         const QString ovpnPath = certificateService.downloadedOvpnPath();
         if (ovpnPath.isEmpty()) {
-            connectUi.certUsernameLabel->setText(QStringLiteral("—"));
-            connectUi.certInstituteLabel->setText(QStringLiteral("—"));
-            connectUi.certEmailLabel->setText(QStringLiteral("—"));
-            connectUi.certStartDateLabel->setText(QStringLiteral("—"));
-            connectUi.certEndDateLabel->setText(QStringLiteral("—"));
-            connectUi.certTimeRemainingLabel->setText(QStringLiteral("—"));
-            connectUi.certValidityProgress->setValue(0);
+            connectUi.certInfoStack->setCurrentIndex(0); // Show "no certificate" page
             return;
         }
+
+        connectUi.certInfoStack->setCurrentIndex(1); // Show certificate info page
 
         QFile file(ovpnPath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -864,7 +856,7 @@ void MainWindow::handleDownloadButtonClicked()
     QString password;
     if (!getCredentialsFromDialog(this,
                                   QStringLiteral("VPN Credentials"),
-                                  QStringLiteral("Enter your IIT Delhi kerberos credentials to download the OVPN configuration."),
+                                  QStringLiteral("Enter your kerberos credentials to download the configuration."),
                                   &username, &password)) {
         return;
     }

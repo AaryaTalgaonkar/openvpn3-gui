@@ -20,7 +20,6 @@ class QProgressBar;
 #include "connectionprogresswidget.h"
 #include "trafficgraphwidget.h"
 #include "ui_mainwindow.h"
-#include "ui_downloadscreen.h"
 #include "ui_connectscreen.h"
 #include "ui_connectingscreen.h"
 #include "ui_disconnectscreen.h"
@@ -47,7 +46,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    Ui::DownloadScreen downloadUi;
     Ui::ConnectScreen connectUi;
     Ui::ConnectingScreen connectingUi;
     Ui::DisconnectScreen disconnectUi;
@@ -75,7 +73,6 @@ private:
     void setInitialFlow();
     void setConnectFlow();
     void loadSavedCertificateState();
-    void startCertificateDownload();
     void applyTheme(bool dark);
     void setupConnectingScreen();
     void showConnectPage();

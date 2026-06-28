@@ -48,7 +48,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         headers/certificatedownloadservice.h
         resources/resources.qrc
         forms/mainwindow.ui
-        forms/downloadscreen.ui
         forms/connectscreen.ui
         forms/connectingscreen.ui
         forms/disconnectscreen.ui
