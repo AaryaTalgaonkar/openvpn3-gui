@@ -876,8 +876,8 @@ void MainWindow::handleConnectButtonClicked()
 
 bool MainWindow::promptForVpnPasswordAndConnect(const QString &message)
 {
-    if (certificateService.downloadedOvpnPath().isEmpty()) {
-        QMessageBox::warning(this, "Missing certificate", "Download the OVPN file first.");
+    if (!QFile::exists(certificateService.downloadedOvpnPath())) {
+        QMessageBox::warning(this, "Missing certificate", "Please generate the configuration before attempting to connect.");
         return false;
     }
 
