@@ -1,9 +1,15 @@
 #include "certificatedownloadservice.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QStandardPaths>
+#include <QTimeZone>
+#include <QUrl>
 
 namespace {
 constexpr auto kOvpnContent = R"(client
@@ -193,6 +199,9 @@ QString makeDownloadPath()
 CertificateDownloadService::CertificateDownloadService(QObject *parent)
     : QObject(parent)
 {
+    googleRetryTimer = new QTimer(this);
+    googleRetryTimer->setInterval(5000); // Retry every 5 seconds
+    connect(googleRetryTimer, &QTimer::timeout, this, &CertificateDownloadService::retryFetchGoogleTime);
 }
 
 QString CertificateDownloadService::downloadedOvpnPath() const
@@ -209,6 +218,69 @@ void CertificateDownloadService::loadSavedCertificateState()
     }
 
     emit savedCertificateUnavailable();
+}
+
+void CertificateDownloadService::fetchGoogleTime()
+{
+    // Make a HEAD request to Google to get the Date header for accurate time
+    auto *googleManager = new QNetworkAccessManager(this);
+    connect(googleManager, &QNetworkAccessManager::finished,
+            this, [this, googleManager](QNetworkReply *reply) {
+                handleGoogleTimeReply(reply);
+                reply->deleteLater();
+                googleManager->deleteLater();
+            });
+
+    QNetworkRequest request(QUrl(QStringLiteral("https://www.google.com")));
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+    googleManager->head(request);
+}
+
+void CertificateDownloadService::handleGoogleTimeReply(QNetworkReply *reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        // Fallback: use local system time, retry when back online
+        emit googleTimeFetchFailed();
+        // Start retry timer to fetch real time when network becomes available
+        if (googleRetryTimer && !googleRetryTimer->isActive()) {
+            googleRetryTimer->start();
+        }
+        return;
+    }
+
+    const QString dateHeader = reply->rawHeader("Date");
+    if (dateHeader.isEmpty()) {
+        emit googleTimeFetchFailed();
+        if (googleRetryTimer && !googleRetryTimer->isActive()) {
+            googleRetryTimer->start();
+        }
+        return;
+    }
+
+    // Parse the RFC 1123 date from Google's headers
+    // Example: "Thu, 18 Jun 2026 12:30:00 GMT"
+    QDateTime googleTime = QDateTime::fromString(dateHeader, QStringLiteral("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
+    googleTime.setTimeZone(QTimeZone::UTC);
+
+    if (!googleTime.isValid()) {
+        emit googleTimeFetchFailed();
+        if (googleRetryTimer && !googleRetryTimer->isActive()) {
+            googleRetryTimer->start();
+        }
+        return;
+    }
+
+    // Successfully got Google time — stop retry timer and emit
+    if (googleRetryTimer && googleRetryTimer->isActive()) {
+        googleRetryTimer->stop();
+    }
+    emit googleTimeReceived(googleTime);
+}
+
+void CertificateDownloadService::retryFetchGoogleTime()
+{
+    fetchGoogleTime();
 }
 
 void CertificateDownloadService::startCertificateDownload(const QString &username, const QString &password)

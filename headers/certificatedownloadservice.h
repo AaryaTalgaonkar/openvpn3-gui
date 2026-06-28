@@ -1,6 +1,9 @@
 #pragma once
 
 #include <QObject>
+#include <QTimer>
+
+class QNetworkReply;
 
 class CertificateDownloadService : public QObject
 {
@@ -14,6 +17,8 @@ public:
 
     QString downloadedOvpnPath() const;
 
+    void fetchGoogleTime();
+
 signals:
     void savedCertificateAvailable(const QString &path);
     void savedCertificateUnavailable();
@@ -23,6 +28,14 @@ signals:
     void warningOccurred(const QString &title, const QString &message);
     void criticalOccurred(const QString &title, const QString &message);
 
+    void googleTimeReceived(const QDateTime &time);
+    void googleTimeFetchFailed();
+
+private slots:
+    void handleGoogleTimeReply(QNetworkReply *reply);
+    void retryFetchGoogleTime();
+
 private:
     QString currentUser;
+    QTimer *googleRetryTimer = nullptr;
 };

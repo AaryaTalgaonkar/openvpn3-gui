@@ -50,7 +50,6 @@ const int kConnectionStepCount = WinMacVpnBackend::kWinMacConnectionStepCount;
 #endif
 
 constexpr int kVpnPasswordDialogWidth = 250;
-constexpr auto kConnectingAccentColor = "#16a34a";
 
 void setPointingHandCursorForButtons(QWidget *widget)
 {
@@ -159,7 +158,12 @@ MainWindow::MainWindow(QWidget *parent)
     backend = std::make_unique<WinMacVpnBackend>(this);
 #endif
 
-    setupConnectingScreen();
+    // Create and set up the connection progress widget (self-contained)
+    {
+        auto *progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);
+        progressWidget->setupSteps(connectingUi.stepsLayout, connectingUi.progressRingHostLayout,
+                                   kConnectionSteps, kConnectionStepCount);
+    }
 
     // Create the certificate box widget and embed it into the placeholder container
     certBox = new CertificateBoxWidget(connectUi.certInfoContainer);
@@ -249,12 +253,15 @@ MainWindow::MainWindow(QWidget *parent)
                 QMessageBox::information(this, title, message);
             });
 
-    spinnerTimer = new QTimer(this);
-    connect(spinnerTimer, &QTimer::timeout, this, &MainWindow::refreshSpinnerFrame);
-
-    googleRetryTimer = new QTimer(this);
-    googleRetryTimer->setInterval(5000); // Retry every 5 seconds
-    connect(googleRetryTimer, &QTimer::timeout, this, &MainWindow::retryFetchGoogleTime);
+    // Connect Google time sync signals from CertificateDownloadService
+    connect(&certificateService, &CertificateDownloadService::googleTimeReceived,
+            this, [this](const QDateTime &time) {
+                certBox->updateValidityDisplay(time);
+            });
+    connect(&certificateService, &CertificateDownloadService::googleTimeFetchFailed,
+            this, [this]() {
+                certBox->updateValidityDisplay(QDateTime::currentDateTimeUtc());
+            });
 
     loadSavedCertificateState();
 }
@@ -271,7 +278,7 @@ void MainWindow::setInitialFlow()
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
     disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
     disconnectUi.connectedTrafficFrame->setVisible(false);
-    resetTrafficIndicators();
+    trafficGraphWidget->resetTraffic();
 }
 
 void MainWindow::setConnectFlow()
@@ -328,402 +335,145 @@ void MainWindow::applyTheme(bool dark)
     }
 }
 
-    void MainWindow::setupConnectingScreen()
-    {
-        progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);
-        progressWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        connectingUi.progressRingHostLayout->addWidget(progressWidget, 0, Qt::AlignCenter);
+void MainWindow::showConnectPage()
+{
+    if (backend->connectionState() == VpnConnectionState::Connected) {
+        ui->screenStack->setCurrentWidget(ui->disconnectPage);
+        disconnectUi.connectionStatusTitle->setText(QStringLiteral("You are connected"));
+        disconnectUi.connectionStatusSubtitle->setText(QStringLiteral("Live throughput is shown below"));
+        disconnectUi.connectedTrafficFrame->setVisible(true);
+        disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
+    } else {
+        ui->screenStack->setCurrentWidget(ui->connectPage);
+        connectUi.connectionStatusTitle->setText(QStringLiteral("You are not connected"));
+        connectUi.connectionStatusSubtitle->setText(QStringLiteral("Connect to access internal resources of IIT Delhi"));
+        connectUi.connectButton->setText(QStringLiteral("⏻"));
+        trafficGraphWidget->resetTraffic();
+    }
+    connectUi.connectButton->setEnabled(true);
+    disconnectUi.disconnectButton->setEnabled(true);
+    ui->statusbar->showMessage(backend->connectionState() == VpnConnectionState::Connected ? QStringLiteral("Status: Connected") : QStringLiteral("Status: Disconnected"));
+}
 
-        while (QLayoutItem *item = connectingUi.stepsLayout->takeAt(0)) {
-            delete item->widget();
-            delete item;
-        }
-        stepStatusLabels.clear();
+void MainWindow::showConnectingPage()
+{
+    ui->screenStack->setCurrentWidget(ui->connectingPage);
+    ui->statusbar->showMessage(QStringLiteral("Status: Connecting"));
+}
 
-        for (int i = 0; i < kConnectionStepCount; ++i) {
-            const auto &step = kConnectionSteps[i];
-            auto *row = new QWidget(connectingUi.stepsFrame);
-            auto *rowLayout = new QHBoxLayout(row);
-            rowLayout->setContentsMargins(0, 0, 0, 0);
-            rowLayout->setSpacing(10);
-
-            auto *iconLabel = new QLabel(QString::fromUtf8(step.icon), row);
-            iconLabel->setFixedWidth(24);
-            iconLabel->setAlignment(Qt::AlignCenter);
-
-            auto *titleLabel = new QLabel(QString::fromUtf8(step.label), row);
-            titleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-            auto *statusLabel = new QLabel(row);
-            statusLabel->setFixedSize(24, 24);
-            statusLabel->setAlignment(Qt::AlignCenter);
-
-            rowLayout->addWidget(iconLabel);
-            rowLayout->addWidget(titleLabel, 1);
-            rowLayout->addWidget(statusLabel);
-            connectingUi.stepsLayout->addWidget(row);
-            stepStatusLabels.push_back(statusLabel);
-        }
-
-        resetConnectingIndicators();
+void MainWindow::updateCertificateInfoBox()
+{
+    const QString ovpnPath = certificateService.downloadedOvpnPath();
+    if (ovpnPath.isEmpty()) {
+        certBox->showNoCertMode();
+        return;
     }
 
-    void MainWindow::showConnectPage()
-    {
-        if (backend->connectionState() == VpnConnectionState::Connected) {
-            ui->screenStack->setCurrentWidget(ui->disconnectPage);
-            disconnectUi.connectionStatusTitle->setText(QStringLiteral("You are connected"));
-            disconnectUi.connectionStatusSubtitle->setText(QStringLiteral("Live throughput is shown below"));
-            disconnectUi.connectedTrafficFrame->setVisible(true);
-            disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
-        } else {
-            ui->screenStack->setCurrentWidget(ui->connectPage);
-            connectUi.connectionStatusTitle->setText(QStringLiteral("You are not connected"));
-            connectUi.connectionStatusSubtitle->setText(QStringLiteral("Connect to access internal resources of IIT Delhi"));
-            connectUi.connectButton->setText(QStringLiteral("⏻"));
-            resetTrafficIndicators();
+    QFile file(ovpnPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return;
+    }
+
+    const QString content = QString::fromUtf8(file.readAll());
+    file.close();
+
+    // Extract the <cert> ... </cert> section
+    QRegularExpression certRegex(QStringLiteral("<cert>\\s*(-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----)\\s*</cert>"),
+                                 QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch certMatch = certRegex.match(content);
+    if (!certMatch.hasMatch()) {
+        return;
+    }
+
+    const QString pemData = certMatch.captured(1).trimmed();
+
+    const QList<QSslCertificate> certs = QSslCertificate::fromData(pemData.toUtf8(), QSsl::Pem);
+    if (certs.isEmpty()) {
+        return;
+    }
+
+    const QSslCertificate &cert = certs.first();
+
+    // Extract subject details
+    const QString cn = cert.subjectInfo(QSslCertificate::CommonName).value(0, QStringLiteral("—"));
+    const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
+    const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
+
+    // Delegate to the certificate box widget
+    certBox->showCertInfo(cn, org, email, cert.effectiveDate().toUTC(), cert.expiryDate().toUTC());
+
+    // Fetch Google time for accurate certificate validity display
+    certificateService.fetchGoogleTime();
+}
+
+void MainWindow::handleVpnStateChanged(const QString &state)
+{
+    // Find the progress widget in the connecting page
+    auto *progressWidget = connectingUi.progressRingHost->findChild<ConnectionProgressWidget *>();
+    if (progressWidget) {
+        const int index = progressWidget->stepIndexForState(state);
+        if (index >= 0) {
+            progressWidget->updateStep(index);
+            if (ui->screenStack->currentWidget() != ui->connectingPage) {
+                showConnectingPage();
+            }
         }
-        connectUi.connectButton->setEnabled(true);
-        disconnectUi.disconnectButton->setEnabled(true);
-        ui->statusbar->showMessage(backend->connectionState() == VpnConnectionState::Connected ? QStringLiteral("Status: Connected") : QStringLiteral("Status: Disconnected"));
     }
+}
 
-    void MainWindow::showConnectingPage()
-    {
-        ui->screenStack->setCurrentWidget(ui->connectingPage);
-        resetConnectingIndicators();
-        ui->statusbar->showMessage(QStringLiteral("Status: Connecting"));
-        spinnerTimer->start(140);
-    }
+void MainWindow::handleVpnConnectionStateChanged(VpnConnectionState state)
+{
+    auto *progressWidget = connectingUi.progressRingHost->findChild<ConnectionProgressWidget *>();
 
-    void MainWindow::resetConnectingIndicators()
-    {
-        spinnerFrameIndex = 0;
-        activeStepIndex = 0;
+    switch (state) {
+    case VpnConnectionState::Disconnected:
         if (progressWidget) {
-            progressWidget->setProgressStep(0, stepStatusLabels.size());
+            progressWidget->resetIndicators();
         }
-        updateStepRows(0);
-    }
-
-    void MainWindow::resetTrafficIndicators()
-    {
-        trafficTimer.invalidate();
-        lastUploadBytes = 0;
-        lastDownloadBytes = 0;
-        lastTrafficSampleMs = 0;
-        trafficSampleInitialized = false;
-        if (trafficGraphWidget) {
-            trafficGraphWidget->clearSamples();
-        }
-        // speeds are shown on the graph overlay; no separate stat labels needed
-    }
-
-    void MainWindow::updateCertificateInfoBox()
-    {
-        const QString ovpnPath = certificateService.downloadedOvpnPath();
-        if (ovpnPath.isEmpty()) {
-            certBox->showNoCertMode();
-            return;
-        }
-
-        QFile file(ovpnPath);
-        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            return;
-        }
-
-        const QString content = QString::fromUtf8(file.readAll());
-        file.close();
-
-        // Extract the <cert> ... </cert> section
-        QRegularExpression certRegex(QStringLiteral("<cert>\\s*(-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----)\\s*</cert>"),
-                                     QRegularExpression::CaseInsensitiveOption);
-        const QRegularExpressionMatch certMatch = certRegex.match(content);
-        if (!certMatch.hasMatch()) {
-            return;
-        }
-
-        const QString pemData = certMatch.captured(1).trimmed();
-
-        const QList<QSslCertificate> certs = QSslCertificate::fromData(pemData.toUtf8(), QSsl::Pem);
-        if (certs.isEmpty()) {
-            return;
-        }
-
-        const QSslCertificate &cert = certs.first();
-
-        // Extract subject details
-        const QString cn = cert.subjectInfo(QSslCertificate::CommonName).value(0, QStringLiteral("—"));
-        const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
-        const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
-
-        // Delegate to the certificate box widget
-        certBox->showCertInfo(cn, org, email, cert.effectiveDate().toUTC(), cert.expiryDate().toUTC());
-
-        // Make a HEAD request to Google to get the Date header for accurate time
-        auto *googleManager = new QNetworkAccessManager(this);
-        connect(googleManager, &QNetworkAccessManager::finished,
-                this, [this, googleManager](QNetworkReply *reply) {
-                    handleGoogleTimeReply(reply);
-                    reply->deleteLater();
-                    googleManager->deleteLater();
-                });
-
-        QNetworkRequest request(QUrl(QStringLiteral("https://www.google.com")));
-        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                             QNetworkRequest::NoLessSafeRedirectPolicy);
-        googleManager->head(request);
-    }
-
-    void MainWindow::handleGoogleTimeReply(QNetworkReply *reply)
-    {
-        if (reply->error() != QNetworkReply::NoError) {
-            // Fallback: use local system time, retry when back online
-            const QDateTime localNow = QDateTime::currentDateTimeUtc();
-            certBox->updateValidityDisplay(localNow);
-            // Start retry timer to fetch real time when network becomes available
-            if (googleRetryTimer && !googleRetryTimer->isActive()) {
-                googleRetryTimer->start();
-            }
-            return;
-        }
-
-        const QString dateHeader = reply->rawHeader("Date");
-        if (dateHeader.isEmpty()) {
-            const QDateTime localNow = QDateTime::currentDateTimeUtc();
-            certBox->updateValidityDisplay(localNow);
-            // Start retry timer to fetch real time when network becomes available
-            if (googleRetryTimer && !googleRetryTimer->isActive()) {
-                googleRetryTimer->start();
-            }
-            return;
-        }
-
-        // Parse the RFC 1123 date from Google's headers
-        // Example: "Thu, 18 Jun 2026 12:30:00 GMT"
-        QDateTime googleTime = QDateTime::fromString(dateHeader, QStringLiteral("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
-        googleTime.setTimeZone(QTimeZone::UTC);
-
-        if (!googleTime.isValid()) {
-            const QDateTime localNow = QDateTime::currentDateTimeUtc();
-            certBox->updateValidityDisplay(localNow);
-            // Start retry timer to fetch real time when network becomes available
-            if (googleRetryTimer && !googleRetryTimer->isActive()) {
-                googleRetryTimer->start();
-            }
-            return;
-        }
-
-        // Successfully got Google time — stop retry timer and update display
-        if (googleRetryTimer && googleRetryTimer->isActive()) {
-            googleRetryTimer->stop();
-        }
-        certBox->updateValidityDisplay(googleTime);
-    }
-
-    void MainWindow::retryFetchGoogleTime()
-    {
-        // Make a HEAD request to Google to get the Date header
-        auto *googleManager = new QNetworkAccessManager(this);
-        connect(googleManager, &QNetworkAccessManager::finished,
-                this, [this, googleManager](QNetworkReply *reply) {
-                    handleGoogleTimeReply(reply);
-                    reply->deleteLater();
-                    googleManager->deleteLater();
-                });
-
-        QNetworkRequest request(QUrl(QStringLiteral("https://www.google.com")));
-        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                             QNetworkRequest::NoLessSafeRedirectPolicy);
-        googleManager->head(request);
-    }
-
-    QString MainWindow::formatThroughput(qreal bytesPerSecond) const
-    {
-        const qreal value = qMax<qreal>(0.0, bytesPerSecond);
-        const char *units[] = {"B/s", "KB/s", "MB/s", "GB/s"};
-        int unitIndex = 0;
-        qreal scaled = value;
-        while (scaled >= 1024.0 && unitIndex < 3) {
-            scaled /= 1024.0;
-            ++unitIndex;
-        }
-        return QStringLiteral("%1 %2").arg(QString::number(scaled, 'f', scaled < 10.0 ? 1 : 0), units[unitIndex]);
-    }
-
-    int MainWindow::stepIndexForState(const QString &state) const
-    {
-        const QString normalized = state.trimmed().toUpper();
-        for (int index = 0; index < kConnectionStepCount; ++index) {
-            if (normalized == QLatin1String(kConnectionSteps[index].state)) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
-    void MainWindow::updateStepRows(int currentIndex)
-    {
-        if (stepStatusLabels.isEmpty()) {
-            return;
-        }
-
-        const int lastIndex = stepStatusLabels.size() - 1;
-        const int boundedIndex = qBound(0, currentIndex, lastIndex);
-        activeStepIndex = boundedIndex;
-
-        for (int index = 0; index < stepStatusLabels.size(); ++index) {
-            QLabel *statusLabel = stepStatusLabels.at(index);
-            if (!statusLabel) {
-                continue;
-            }
-
-            if (index < boundedIndex) {
-                statusLabel->setText(QString::fromUtf8("✓"));
-                statusLabel->setStyleSheet(QStringLiteral("QLabel { border: 1px solid rgba(34,197,94,0.75); border-radius: 12px; color: #16a34a; background-color: rgba(34,197,94,0.12); font-weight: bold; }"));
-            } else if (index == boundedIndex) {
-                if (boundedIndex >= lastIndex) {
-                    statusLabel->setText(QString::fromUtf8("✓"));
-                    statusLabel->setStyleSheet(QStringLiteral("QLabel { border: 1px solid rgba(34,197,94,0.75); border-radius: 12px; color: #16a34a; background-color: rgba(34,197,94,0.12); font-weight: bold; }"));
-                } else {
-                    const QString spinner = spinnerFrames.isEmpty() ? QStringLiteral("◐") : spinnerFrames.at(spinnerFrameIndex % spinnerFrames.size());
-                    statusLabel->setText(spinner);
-                    statusLabel->setStyleSheet(QStringLiteral("QLabel { border: 1px solid rgba(34,197,94,0.85); border-radius: 12px; color: %1; background-color: rgba(34,197,94,0.08); font-weight: bold; }").arg(kConnectingAccentColor));
-                }
-            } else {
-                statusLabel->setText(QString());
-                statusLabel->setStyleSheet(QStringLiteral("QLabel { border: 1px solid rgba(0,0,0,0.14); border-radius: 12px; color: rgba(0,0,0,0.35); background-color: transparent; }"));
-            }
-        }
-
-        if (progressWidget) {
-            progressWidget->setProgressStep(boundedIndex, stepStatusLabels.size());
-        }
-
-        if (boundedIndex >= lastIndex) {
-            spinnerTimer->stop();
-        }
-    }
-
-    void MainWindow::refreshSpinnerFrame()
-    {
-        if (spinnerFrames.isEmpty() || activeStepIndex < 0 || activeStepIndex >= stepStatusLabels.size() - 1) {
-            return;
-        }
-
-        spinnerFrameIndex = (spinnerFrameIndex + 1) % spinnerFrames.size();
-        updateStepRows(activeStepIndex);
-    }
-
-    void MainWindow::updateConnectionStep(const QString &state)
-    {
-        const int index = stepIndexForState(state);
-        if (index < 0) {
-            return;
-        }
-
-        if (spinnerFrames.isEmpty()) {
-            spinnerFrames = {QString::fromUtf8("◐"), QString::fromUtf8("◓"), QString::fromUtf8("◑"), QString::fromUtf8("◒")};
-        }
-
-        ui->statusbar->showMessage(QStringLiteral("Status: Connecting"));
-        if (index < kConnectionStepCount - 1) {
-            if (!spinnerTimer->isActive()) {
-                spinnerTimer->start(140);
-            }
-        }
-        updateStepRows(index);
-    }
-
-    void MainWindow::handleVpnStateChanged(const QString &state)
-    {
-        updateConnectionStep(state);
-        if (stepIndexForState(state) >= 0 && ui->screenStack->currentWidget() != ui->connectingPage) {
-            showConnectingPage();
-        }
-    }
-
-    void MainWindow::handleVpnConnectionStateChanged(VpnConnectionState state)
-    {
-        switch (state) {
-        case VpnConnectionState::Disconnected:
-            spinnerTimer->stop();
-            resetConnectingIndicators();
-            resetTrafficIndicators();
-            showConnectPage();
-            break;
-
-        case VpnConnectionState::Connecting:
-            showConnectingPage();
-            break;
-
-        case VpnConnectionState::Connected:
-            spinnerTimer->stop();
-            if (progressWidget) {
-                progressWidget->setProgressStep(kConnectionStepCount - 1, kConnectionStepCount);
-            }
-            updateStepRows(kConnectionStepCount - 1);
-            resetTrafficIndicators();
-            trafficTimer.start();
-            ui->statusbar->showMessage(QStringLiteral("Status: Connected"));
-            // Move traffic widget into the disconnect host and show the disconnect page
-            if (trafficGraphWidget) {
-                trafficGraphWidget->setParent(nullptr);
-                disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
-            }
-            showConnectPage();
-            break;
-        }
-    }
-
-    void MainWindow::handleVpnError(const QString &message)
-    {
-        spinnerTimer->stop();
-        resetConnectingIndicators();
-        resetTrafficIndicators();
+        trafficGraphWidget->resetTraffic();
         showConnectPage();
+        break;
 
-        QMessageBox::critical(this, "VPN Error", message);
-    }
+    case VpnConnectionState::Connecting:
+        showConnectingPage();
+        break;
 
-    void MainWindow::handleVpnByteCountChanged(qulonglong uploadBytes, qulonglong downloadBytes)
-    {
-        if (backend->connectionState() != VpnConnectionState::Connected) {
-            return;
+    case VpnConnectionState::Connected:
+        if (progressWidget) {
+            progressWidget->setProgressStep(kConnectionStepCount - 1, kConnectionStepCount);
+            progressWidget->updateStep(kConnectionStepCount - 1);
         }
-
-        if (!trafficTimer.isValid()) {
-            trafficTimer.start();
-        }
-
-        const qint64 nowMs = trafficTimer.elapsed();
-
-        if (!trafficSampleInitialized) {
-            trafficSampleInitialized = true;
-            lastUploadBytes = uploadBytes;
-            lastDownloadBytes = downloadBytes;
-            lastTrafficSampleMs = nowMs;
-            if (trafficGraphWidget) {
-                trafficGraphWidget->appendSample(0.0, 0.0, 0.0);
-            }
-            return;
-        }
-
-        const qreal elapsedSeconds = qMax<qreal>(0.001, (nowMs - lastTrafficSampleMs) / 1000.0);
-        const qulonglong uploadDeltaBytes = uploadBytes >= lastUploadBytes ? (uploadBytes - lastUploadBytes) : 0;
-        const qulonglong downloadDeltaBytes = downloadBytes >= lastDownloadBytes ? (downloadBytes - lastDownloadBytes) : 0;
-        const qreal uploadSpeed = static_cast<qreal>(uploadDeltaBytes) / elapsedSeconds;
-        const qreal downloadSpeed = static_cast<qreal>(downloadDeltaBytes) / elapsedSeconds;
-
-        lastUploadBytes = uploadBytes;
-        lastDownloadBytes = downloadBytes;
-        lastTrafficSampleMs = nowMs;
-
+        trafficGraphWidget->resetTraffic();
+        ui->statusbar->showMessage(QStringLiteral("Status: Connected"));
+        // Move traffic widget into the disconnect host and show the disconnect page
         if (trafficGraphWidget) {
-            trafficGraphWidget->appendSample(nowMs / 1000.0, uploadSpeed, downloadSpeed);
+            trafficGraphWidget->setParent(nullptr);
+            disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
         }
-
+        showConnectPage();
+        break;
     }
+}
+
+void MainWindow::handleVpnError(const QString &message)
+{
+    auto *progressWidget = connectingUi.progressRingHost->findChild<ConnectionProgressWidget *>();
+    if (progressWidget) {
+        progressWidget->resetIndicators();
+    }
+    trafficGraphWidget->resetTraffic();
+    showConnectPage();
+
+    QMessageBox::critical(this, "VPN Error", message);
+}
+
+void MainWindow::handleVpnByteCountChanged(qulonglong uploadBytes, qulonglong downloadBytes)
+{
+    if (backend->connectionState() != VpnConnectionState::Connected) {
+        return;
+    }
+    trafficGraphWidget->onByteCountReceived(uploadBytes, downloadBytes);
+}
 
 void MainWindow::on_themeToggleButton_clicked()
 {

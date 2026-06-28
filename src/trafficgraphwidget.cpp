@@ -16,6 +16,7 @@ TrafficGraphWidget::TrafficGraphWidget(QWidget *parent)
 {
     setMinimumSize(320, 180);
     setAttribute(Qt::WA_StyledBackground, true);
+    trafficTimer.invalidate();
 }
 
 QSize TrafficGraphWidget::sizeHint() const
@@ -32,6 +33,46 @@ void TrafficGraphWidget::clearSamples()
 {
     samples.clear();
     update();
+}
+
+void TrafficGraphWidget::onByteCountReceived(qulonglong uploadBytes, qulonglong downloadBytes)
+{
+    if (!trafficTimer.isValid()) {
+        trafficTimer.start();
+    }
+
+    const qint64 nowMs = trafficTimer.elapsed();
+
+    if (!trafficSampleInitialized) {
+        trafficSampleInitialized = true;
+        lastUploadBytes = uploadBytes;
+        lastDownloadBytes = downloadBytes;
+        lastTrafficSampleMs = nowMs;
+        appendSample(0.0, 0.0, 0.0);
+        return;
+    }
+
+    const qreal elapsedSeconds = qMax<qreal>(0.001, (nowMs - lastTrafficSampleMs) / 1000.0);
+    const qulonglong uploadDeltaBytes = uploadBytes >= lastUploadBytes ? (uploadBytes - lastUploadBytes) : 0;
+    const qulonglong downloadDeltaBytes = downloadBytes >= lastDownloadBytes ? (downloadBytes - lastDownloadBytes) : 0;
+    const qreal uploadSpeed = static_cast<qreal>(uploadDeltaBytes) / elapsedSeconds;
+    const qreal downloadSpeed = static_cast<qreal>(downloadDeltaBytes) / elapsedSeconds;
+
+    lastUploadBytes = uploadBytes;
+    lastDownloadBytes = downloadBytes;
+    lastTrafficSampleMs = nowMs;
+
+    appendSample(nowMs / 1000.0, uploadSpeed, downloadSpeed);
+}
+
+void TrafficGraphWidget::resetTraffic()
+{
+    trafficTimer.invalidate();
+    lastUploadBytes = 0;
+    lastDownloadBytes = 0;
+    lastTrafficSampleMs = 0;
+    trafficSampleInitialized = false;
+    clearSamples();
 }
 
 void TrafficGraphWidget::appendSample(qreal timeSeconds,

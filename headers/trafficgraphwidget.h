@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QVector>
+#include <QElapsedTimer>
 
 class TrafficGraphWidget : public QWidget
 {
@@ -16,6 +17,9 @@ public:
 
     void clearSamples();
     void appendSample(qreal timeSeconds, qreal uploadSpeedBytesPerSecond, qreal downloadSpeedBytesPerSecond);
+
+    void onByteCountReceived(qulonglong uploadBytes, qulonglong downloadBytes);
+    void resetTraffic();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -31,6 +35,13 @@ private:
 
     static QString formatSpeed(qreal bytesPerSecond);
     void trimSamples();
+
+    // Traffic tracking
+    QElapsedTimer trafficTimer;
+    qulonglong lastUploadBytes = 0;
+    qulonglong lastDownloadBytes = 0;
+    qint64 lastTrafficSampleMs = 0;
+    bool trafficSampleInitialized = false;
 };
 
 #endif
