@@ -161,6 +161,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupConnectingScreen();
 
+    // Create the certificate box widget and embed it into the placeholder container
+    certBox = new CertificateBoxWidget(connectUi.certInfoContainer);
+    {
+        auto *containerLayout = new QVBoxLayout(connectUi.certInfoContainer);
+        containerLayout->setContentsMargins(0, 0, 0, 0);
+        containerLayout->addWidget(certBox);
+    }
+
     // Create a single traffic graph widget and add it to the disconnect screen.
     trafficGraphWidget = new TrafficGraphWidget(nullptr);
     trafficGraphWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -177,22 +185,22 @@ MainWindow::MainWindow(QWidget *parent)
 
     connectUi.connectButton->setCheckable(false);
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
-    connect(connectUi.generateButton, &QPushButton::clicked,
+    connect(certBox, &CertificateBoxWidget::generateClicked,
             this, &MainWindow::handleDownloadButtonClicked);
-        connect(connectUi.connectButton, &QPushButton::clicked,
+    connect(connectUi.connectButton, &QPushButton::clicked,
             this, &MainWindow::handleConnectButtonClicked);
-        connect(disconnectUi.disconnectButton, &QPushButton::clicked,
+    connect(disconnectUi.disconnectButton, &QPushButton::clicked,
             this, &MainWindow::handleConnectButtonClicked);
     loadSavedCertificateState();
 
     connect(backend.get(), &IVpnBackend::stateChanged,
             this, &MainWindow::handleVpnStateChanged);
 
-        connect(backend.get(), &IVpnBackend::byteCountChanged,
+    connect(backend.get(), &IVpnBackend::byteCountChanged,
             this, &MainWindow::handleVpnByteCountChanged);
 
-            connect(backend.get(), &IVpnBackend::connectionInfoChanged,
-                this, &MainWindow::handleVpnConnectionInfoChanged);
+    connect(backend.get(), &IVpnBackend::connectionInfoChanged,
+            this, &MainWindow::handleVpnConnectionInfoChanged);
 
     connect(backend.get(), &IVpnBackend::connectionStateChanged,
             this, &MainWindow::handleVpnConnectionStateChanged);
@@ -200,7 +208,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(backend.get(), &IVpnBackend::errorOccurred,
             this, &MainWindow::handleVpnError);
 
-        connect(backend.get(), &IVpnBackend::logLineReceived,
+    connect(backend.get(), &IVpnBackend::logLineReceived,
             this, [this](const QString &line) {
             recentConnectionLogs.push_back(line);
             });
@@ -217,8 +225,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(&certificateService, &CertificateDownloadService::busyChanged,
             this, [this](bool busy) {
-                connectUi.generateButton->setEnabled(!busy);
-                connectUi.generateButton->setText(busy ? "Downloading..." : "generate");
+                certBox->setGenerateEnabled(!busy);
+                certBox->setGenerateButtonText(busy ? "Downloading..." : "Generate");
             });
 
     connect(&certificateService, &CertificateDownloadService::statusMessage,
@@ -259,7 +267,7 @@ MainWindow::~MainWindow()
 void MainWindow::setInitialFlow()
 {
     ui->screenStack->setCurrentWidget(ui->connectPage);
-    connectUi.certInfoStack->setCurrentIndex(0); // Show "no certificate" page
+    certBox->showNoCertMode();
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
     disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
     disconnectUi.connectedTrafficFrame->setVisible(false);
@@ -415,11 +423,9 @@ void MainWindow::applyTheme(bool dark)
     {
         const QString ovpnPath = certificateService.downloadedOvpnPath();
         if (ovpnPath.isEmpty()) {
-            connectUi.certInfoStack->setCurrentIndex(0); // Show "no certificate" page
+            certBox->showNoCertMode();
             return;
         }
-
-        connectUi.certInfoStack->setCurrentIndex(1); // Show certificate info page
 
         QFile file(ovpnPath);
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -451,23 +457,10 @@ void MainWindow::applyTheme(bool dark)
         const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
         const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
 
-        connectUi.certUsernameLabel->setText(cn);
-        connectUi.certInstituteLabel->setText(org);
-        connectUi.certEmailLabel->setText(email);
+        // Delegate to the certificate box widget
+        certBox->showCertInfo(cn, org, email, cert.effectiveDate().toUTC(), cert.expiryDate().toUTC());
 
-        // Store validity dates for later use with Google time
-        certEffectiveDate = cert.effectiveDate().toUTC();
-        certExpiryDate = cert.expiryDate().toUTC();
-
-        const QString dateFormat = QStringLiteral("dd MMM yyyy");
-        connectUi.certStartDateLabel->setText(certEffectiveDate.toString(dateFormat));
-        connectUi.certEndDateLabel->setText(certExpiryDate.toString(dateFormat));
-
-        // Show time remaining using local system time initially;
-        // will be refined when Google time arrives below.
-        updateCertValidityDisplay(QDateTime::currentDateTimeUtc());
-
-        // Make a HEAD request to Google to get the Date header
+        // Make a HEAD request to Google to get the Date header for accurate time
         auto *googleManager = new QNetworkAccessManager(this);
         connect(googleManager, &QNetworkAccessManager::finished,
                 this, [this, googleManager](QNetworkReply *reply) {
@@ -487,7 +480,7 @@ void MainWindow::applyTheme(bool dark)
         if (reply->error() != QNetworkReply::NoError) {
             // Fallback: use local system time, retry when back online
             const QDateTime localNow = QDateTime::currentDateTimeUtc();
-            updateCertValidityDisplay(localNow);
+            certBox->updateValidityDisplay(localNow);
             // Start retry timer to fetch real time when network becomes available
             if (googleRetryTimer && !googleRetryTimer->isActive()) {
                 googleRetryTimer->start();
@@ -498,7 +491,7 @@ void MainWindow::applyTheme(bool dark)
         const QString dateHeader = reply->rawHeader("Date");
         if (dateHeader.isEmpty()) {
             const QDateTime localNow = QDateTime::currentDateTimeUtc();
-            updateCertValidityDisplay(localNow);
+            certBox->updateValidityDisplay(localNow);
             // Start retry timer to fetch real time when network becomes available
             if (googleRetryTimer && !googleRetryTimer->isActive()) {
                 googleRetryTimer->start();
@@ -513,7 +506,7 @@ void MainWindow::applyTheme(bool dark)
 
         if (!googleTime.isValid()) {
             const QDateTime localNow = QDateTime::currentDateTimeUtc();
-            updateCertValidityDisplay(localNow);
+            certBox->updateValidityDisplay(localNow);
             // Start retry timer to fetch real time when network becomes available
             if (googleRetryTimer && !googleRetryTimer->isActive()) {
                 googleRetryTimer->start();
@@ -525,17 +518,11 @@ void MainWindow::applyTheme(bool dark)
         if (googleRetryTimer && googleRetryTimer->isActive()) {
             googleRetryTimer->stop();
         }
-        updateCertValidityDisplay(googleTime);
+        certBox->updateValidityDisplay(googleTime);
     }
 
     void MainWindow::retryFetchGoogleTime()
     {
-        // Only retry if we still don't have valid certificate dates or just need to re-fetch
-        if (!certEffectiveDate.isValid() || !certExpiryDate.isValid()) {
-            googleRetryTimer->stop();
-            return;
-        }
-
         // Make a HEAD request to Google to get the Date header
         auto *googleManager = new QNetworkAccessManager(this);
         connect(googleManager, &QNetworkAccessManager::finished,
@@ -549,66 +536,6 @@ void MainWindow::applyTheme(bool dark)
         request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                              QNetworkRequest::NoLessSafeRedirectPolicy);
         googleManager->head(request);
-    }
-
-    void MainWindow::updateCertValidityDisplay(const QDateTime &now)
-    {
-        if (!certEffectiveDate.isValid() || !certExpiryDate.isValid()) {
-            return;
-        }
-
-        // Calculate total validity span
-        const qint64 totalSecs = certEffectiveDate.secsTo(certExpiryDate);
-        if (totalSecs <= 0) {
-            connectUi.certValidityProgress->setValue(100);
-            connectUi.certTimeRemainingLabel->setText(QStringLiteral("Expired"));
-            return;
-        }
-
-        // Calculate elapsed seconds since effective date
-        qint64 elapsedSecs = certEffectiveDate.secsTo(now);
-        if (elapsedSecs < 0) {
-            elapsedSecs = 0;
-        }
-
-        int progressPercent = 0;
-        if (elapsedSecs >= totalSecs) {
-            progressPercent = 100;
-        } else {
-            progressPercent = static_cast<int>((elapsedSecs * 100) / totalSecs);
-        }
-        connectUi.certValidityProgress->setValue(progressPercent);
-
-        // Calculate time remaining from now until expiry
-        if (now >= certExpiryDate) {
-            connectUi.certTimeRemainingLabel->setText(QStringLiteral("Expired"));
-        } else {
-            const qint64 secsRemaining = now.secsTo(certExpiryDate);
-            const qint64 daysRemaining = secsRemaining / 86400;
-            const qint64 hoursRemaining = (secsRemaining % 86400) / 3600;
-            const qint64 monthsRemaining = daysRemaining / 30;
-            const qint64 remainingDays = daysRemaining % 30;
-
-            QString timeStr;
-            if (monthsRemaining > 0) {
-                timeStr = QStringLiteral("%1 month%2 %3 day%4")
-                              .arg(monthsRemaining)
-                              .arg(monthsRemaining == 1 ? QString() : QStringLiteral("s"))
-                              .arg(remainingDays)
-                              .arg(remainingDays == 1 ? QString() : QStringLiteral("s"));
-            } else if (daysRemaining > 0) {
-                timeStr = QStringLiteral("%1 day%2 %3 hour%4")
-                              .arg(daysRemaining)
-                              .arg(daysRemaining == 1 ? QString() : QStringLiteral("s"))
-                              .arg(hoursRemaining)
-                              .arg(hoursRemaining == 1 ? QString() : QStringLiteral("s"));
-            } else {
-                timeStr = QStringLiteral("%1 hour%2")
-                              .arg(hoursRemaining)
-                              .arg(hoursRemaining == 1 ? QString() : QStringLiteral("s"));
-            }
-            connectUi.certTimeRemainingLabel->setText(timeStr);
-        }
     }
 
     QString MainWindow::formatThroughput(qreal bytesPerSecond) const

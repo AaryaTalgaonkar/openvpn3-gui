@@ -41,10 +41,13 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/mainwindow.cpp
         src/connectionprogresswidget.cpp
         src/trafficgraphwidget.cpp
+        src/certificateboxwidget.cpp
         headers/winmacvpnbackend.h
         headers/mainwindow.h
         headers/connectionprogresswidget.h
         headers/trafficgraphwidget.h
+        headers/certificateboxwidget.h
+        forms/certificatebox.ui
         headers/certificatedownloadservice.h
         resources/resources.qrc
         forms/mainwindow.ui

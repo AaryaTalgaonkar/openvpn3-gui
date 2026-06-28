@@ -19,6 +19,7 @@ class QProgressBar;
 #include "certificatedownloadservice.h"
 #include "connectionprogresswidget.h"
 #include "trafficgraphwidget.h"
+#include "certificateboxwidget.h"
 #include "ui_mainwindow.h"
 #include "ui_connectscreen.h"
 #include "ui_connectingscreen.h"
@@ -42,7 +43,8 @@ private slots:
     void handleVpnError(const QString &message);
     void handleVpnByteCountChanged(qulonglong uploadBytes, qulonglong downloadBytes);
     void handleVpnConnectionInfoChanged(const QString &remote, const QString &remoteAddr, const QString &proto, const QString &localIface, const QString &localIp, const QString &gateway, int mtu);
-
+    void handleGoogleTimeReply(QNetworkReply *reply);
+    void retryFetchGoogleTime();
 
 private:
     Ui::MainWindow *ui;
@@ -67,8 +69,7 @@ private:
     bool trafficSampleInitialized = false;
     QSettings settings;
 
-    QDateTime certEffectiveDate;
-    QDateTime certExpiryDate;
+    CertificateBoxWidget *certBox = nullptr;
 
     void setInitialFlow();
     void setConnectFlow();
@@ -83,9 +84,6 @@ private:
     QString formatThroughput(qreal bytesPerSecond) const;
     void updateConnectionStep(const QString &state);
     void updateCertificateInfoBox();
-    void handleGoogleTimeReply(QNetworkReply *reply);
-    void updateCertValidityDisplay(const QDateTime &now);
-    void retryFetchGoogleTime();
     void refreshSpinnerFrame();
     int stepIndexForState(const QString &state) const;
     void updateStepRows(int currentIndex);
