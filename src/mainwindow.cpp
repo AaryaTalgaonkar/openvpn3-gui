@@ -49,8 +49,6 @@ const ConnectionStepDefinition* const kConnectionSteps = WinMacVpnBackend::kWinM
 const int kConnectionStepCount = WinMacVpnBackend::kWinMacConnectionStepCount;
 #endif
 
-constexpr auto kLoginUrl = "https://newcert.iitd.ac.in/cgi-bin/usermanage/vpn3cert.cgi";
-constexpr auto kDownloadUrl = "https://newcert.iitd.ac.in/cgi-bin/usermanage/getvpn3cert.cgi";
 constexpr int kVpnPasswordDialogWidth = 250;
 constexpr auto kConnectingAccentColor = "#16a34a";
 
@@ -61,6 +59,55 @@ void setPointingHandCursorForButtons(QWidget *widget)
             button->setCursor(Qt::PointingHandCursor);
         }
     }
+}
+
+bool getCredentialsFromDialog(QWidget *parent, const QString &title, const QString &promptText, QString *username, QString *password)
+{
+    if (!username || !password) {
+        return false;
+    }
+
+    QDialog dialog(parent);
+    dialog.setWindowTitle(title);
+    dialog.setFixedWidth(300);
+
+    auto *layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(12);
+    layout->setContentsMargins(20, 20, 20, 20);
+
+    if (!promptText.isEmpty()) {
+        auto *infoLabel = new QLabel(promptText, &dialog);
+        infoLabel->setWordWrap(true);
+        layout->addWidget(infoLabel);
+    }
+
+    auto *userEdit = new QLineEdit(&dialog);
+    userEdit->setPlaceholderText("Username (e.g. cs5xxxxxx)");
+    layout->addWidget(userEdit);
+
+    auto *passEdit = new QLineEdit(&dialog);
+    passEdit->setPlaceholderText("Password");
+    passEdit->setEchoMode(QLineEdit::Password);
+    layout->addWidget(passEdit);
+
+    auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+    layout->addWidget(buttonBox);
+
+    QObject::connect(buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    QTimer::singleShot(0, &dialog, [&dialog]() {
+        setPointingHandCursorForButtons(&dialog);
+    });
+    dialog.adjustSize();
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return false;
+    }
+
+    *username = userEdit->text().trimmed();
+    *password = passEdit->text();
+    return !username->isEmpty() && !password->isEmpty();
 }
 
 bool getPasswordFromDialog(QWidget *parent, const QString &title, const QString &promptText, QString *password)
@@ -94,24 +141,6 @@ bool getPasswordFromDialog(QWidget *parent, const QString &title, const QString 
     return !password->isEmpty();
 }
 
-bool isConnectivityFailure(QNetworkReply::NetworkError error)
-{
-    switch (error) {
-    case QNetworkReply::HostNotFoundError:
-    case QNetworkReply::NetworkSessionFailedError:
-    case QNetworkReply::TimeoutError:
-    case QNetworkReply::TemporaryNetworkFailureError:
-    case QNetworkReply::UnknownNetworkError:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool containsInsensitive(const QString &html, const char *needle)
-{
-    return html.contains(QString::fromUtf8(needle), Qt::CaseInsensitive);
-}
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -146,34 +175,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     darkTheme = settings.value("theme/dark", false).toBool();
     applyTheme(darkTheme);
-
-    auto makeEmojiIcon = [](const QString &emoji, int px) {
-        QFont f;
-        f.setPointSize(px);
-        QFontMetrics fm(f);
-        const int w = px;
-        const int h = px;
-        QPixmap pix(w, h);
-        pix.fill(Qt::transparent);
-        QPainter p(&pix);
-        p.setFont(f);
-        p.setPen(QPen(QColor("#c21717")));
-        p.drawText(pix.rect(), Qt::AlignCenter, emoji);
-        p.end();
-        return QIcon(pix);
-    };
-
-    if (downloadUi.usernameEdit) {
-        downloadUi.usernameEdit->addAction(makeEmojiIcon(QString::fromUtf8("👤"), 14), QLineEdit::LeadingPosition);
-        downloadUi.usernameEdit->setStyleSheet("padding-left: 28px;");
-    }
-    if (downloadUi.passwordEdit) {
-        downloadUi.passwordEdit->addAction(makeEmojiIcon(QString::fromUtf8("🔒"), 14), QLineEdit::LeadingPosition);
-        downloadUi.passwordEdit->setStyleSheet("padding-left: 28px;");
-    }
-    if (downloadUi.userIcon) downloadUi.userIcon->setVisible(false);
-    if (downloadUi.passIcon) downloadUi.passIcon->setVisible(false);
-
 
     connectUi.connectButton->setCheckable(false);
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
@@ -859,7 +860,16 @@ void MainWindow::handleVpnConnectionInfoChanged(const QString &remote, const QSt
 
 void MainWindow::handleDownloadButtonClicked()
 {
-    certificateService.startCertificateDownload(downloadUi.usernameEdit->text(), downloadUi.passwordEdit->text());
+    QString username;
+    QString password;
+    if (!getCredentialsFromDialog(this,
+                                  QStringLiteral("VPN Credentials"),
+                                  QStringLiteral("Enter your IIT Delhi kerberos credentials to download the OVPN configuration."),
+                                  &username, &password)) {
+        return;
+    }
+
+    certificateService.startCertificateDownload(username, password);
 }
 
 void MainWindow::handleConnectButtonClicked()

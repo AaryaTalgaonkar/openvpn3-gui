@@ -2,11 +2,6 @@
 
 #include <QObject>
 
-class QByteArray;
-class QNetworkAccessManager;
-class QNetworkReply;
-class QUrl;
-
 class CertificateDownloadService : public QObject
 {
     Q_OBJECT
@@ -28,15 +23,6 @@ signals:
     void warningOccurred(const QString &title, const QString &message);
     void criticalOccurred(const QString &title, const QString &message);
 
-private slots:
-    void handleInitialResponse(QNetworkReply *reply);
-    void handleDownloadResponse(QNetworkReply *reply);
-
 private:
-    QNetworkAccessManager *certManager = nullptr;
     QString currentUser;
-
-    void sendCertificateRequest(const QUrl &url, const QByteArray &body);
-    QString extractHiddenField(const QString &html, const QString &name) const;
-    QString makeDownloadPath() const;
 };
