@@ -56,6 +56,13 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/linuxvpnbackend.cpp
         headers/ivpnbackend.h
         src/winmacvpnbackend.cpp
+        headers/ikeystore.h
+        headers/windowskeystore.h
+        src/windowskeystore.cpp
+        headers/linuxkeystore.h
+        src/linuxkeystore.cpp
+        headers/mackeystore.h
+        src/mackeystore.cpp
 
 
     )
