@@ -177,6 +177,14 @@ MainWindow::MainWindow(QWidget *parent)
     // Pass the keystore to the certificate download service for CSR generation
     certificateService.setKeyStore(keystore.get());
 
+    // Pass the keystore to the backend for RSA_SIGN operations
+    if (backend) {
+        auto *winMacBackend = qobject_cast<WinMacVpnBackend *>(backend.get());
+        if (winMacBackend) {
+            winMacBackend->setKeyStore(keystore.get());
+        }
+    }
+
     // Create and set up the connection progress widget (self-contained)
     {
         auto *progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);

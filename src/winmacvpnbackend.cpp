@@ -1,4 +1,5 @@
 #include "winmacvpnbackend.h"
+#include "ikeystore.h"
 
 #include <QDateTime>
 #include <QStringList>
@@ -53,8 +54,7 @@ QString friendlyFatalMessageFromLine(const QByteArray &line, const QString &curr
         if (currentOperation == QStringLiteral("WAIT")) {
             return QStringLiteral("The server could not be reached or it failed to respond. Common causes are :\n"
                                  "i. You are already on IITD network. Please connect externally.\n"
-                                 "ii. You are behind a firewall blocking port 1194. Please try to connect with your mobile hotspot instead.\n"
-                                 "iii. The certificate has expired. Please download it again.");
+                                 "ii. You are behind a firewall blocking port 1194. Please try to connect with your mobile hotspot instead.");
         }
 
         return QStringLiteral("The connection timed out while contacting the server. Please try again.");
@@ -291,7 +291,35 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
         if (uploadOk && downloadOk) {
             emit byteCountChanged(uploadBytes, downloadBytes);
         }
+    } else if(tag == QStringLiteral("RSA_SIGN")) {
+        if (!m_keyStore) {
+            qWarning() << "[WinMacVpnBackend] RSA_SIGN received but no keystore is set.";
+            return;
+        }
+
+        const QByteArray rawData = QByteArray::fromBase64(payload);
+        if (rawData.isEmpty()) {
+            qWarning() << "[WinMacVpnBackend] RSA_SIGN: failed to decode base64 payload.";
+            return;
+        }
+
+        const QByteArray signature = m_keyStore->signData(rawData);
+        if (signature.isEmpty()) {
+            qWarning() << "[WinMacVpnBackend] RSA_SIGN: keystore returned empty signature.";
+            return;
+        }
+
+
+        mgmtSocket.write("rsa-sig\n");
+        mgmtSocket.write(signature.toBase64() + "\n");
+        mgmtSocket.write("END\n");
+        mgmtSocket.flush();
     }
+}
+
+void WinMacVpnBackend::setKeyStore(IKeyStore *keystore)
+{
+    m_keyStore = keystore;
 }
 
 void WinMacVpnBackend::handleConnectedLog(const QString &payloadStr)

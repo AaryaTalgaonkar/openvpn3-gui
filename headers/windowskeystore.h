@@ -26,6 +26,8 @@ private:
                              int timeoutMs = 60000) const;
 
     static QString providerParam();
+
+    static QByteArray p1363ToDer(const QByteArray &p1363Sig);
 };
 
 #endif 

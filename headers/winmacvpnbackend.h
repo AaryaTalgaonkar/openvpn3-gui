@@ -8,6 +8,8 @@
 #include <QProcess>
 #include <QTcpSocket>
 
+class IKeyStore;
+
 class WinMacVpnBackend : public IVpnBackend
 {
     Q_OBJECT
@@ -18,6 +20,8 @@ public:
     const ConnectionStepDefinition *connectionSteps() const override { return kWinMacConnectionSteps; }
     int connectionStepCount() const override { return kWinMacConnectionStepCount; }
     int currentConnectionStepIndex() const override { return m_currentConnectionStep; }
+
+    void setKeyStore(IKeyStore *keystore);
 
     void connectVpn(const QString &ovpnPath,
                     const QString &password) override;
@@ -37,6 +41,7 @@ private:
     QProcess *vpnProcess = nullptr;
     QTcpSocket mgmtSocket;
     QString mgmtPassword;
+    IKeyStore *m_keyStore = nullptr;
     VpnConnectionState connectedState = VpnConnectionState::Disconnected;
     int m_currentConnectionStep = -1;
 

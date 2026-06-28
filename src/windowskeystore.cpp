@@ -9,6 +9,9 @@
 #include <QProcess>
 #include <QTextStream>
 
+#include <windows.h>
+#include <wincrypt.h>
+
 QString WindowsKeyStore::providerParam()
 {
     return QStringLiteral("Microsoft Platform Crypto Provider");
@@ -97,6 +100,51 @@ void WindowsKeyStore::generateKey()
                     << "Output:" << output;
     }
 }
+QByteArray WindowsKeyStore::p1363ToDer(const QByteArray &p1363Sig)
+{
+
+    if (p1363Sig.size() != 64) {
+        qWarning() << "[p1363ToDer] Invalid P1363 signature length:" << p1363Sig.size()
+                << "expected 64 bytes";
+        return {};
+    }
+
+    QByteArray rPart = p1363Sig.left(32);
+    QByteArray sPart = p1363Sig.mid(32);
+
+
+    CERT_ECC_SIGNATURE eccSig = {};
+
+    QByteArray rLe = rPart;
+    QByteArray sLe = sPart;
+
+    std::reverse(rLe.begin(), rLe.end());
+    std::reverse(sLe.begin(), sLe.end());
+
+    eccSig.r.cbData = rLe.size();
+    eccSig.r.pbData = reinterpret_cast<BYTE*>(rLe.data());
+
+    eccSig.s.cbData = sLe.size();
+    eccSig.s.pbData = reinterpret_cast<BYTE*>(sLe.data());
+
+    DWORD pcbEncoded = 0;
+
+    if (!CryptEncodeObjectEx(X509_ASN_ENCODING, X509_ECC_SIGNATURE, &eccSig, 0, nullptr, nullptr, &pcbEncoded)) {
+        DWORD err = GetLastError();
+        qWarning() << "[p1363ToDer] CryptEncodeObjectEx sizing FAILED. Error:" << QString::number(err, 16);
+        return {};
+    }
+
+    QByteArray derSig(static_cast<int>(pcbEncoded), Qt::Uninitialized);
+
+    if (!CryptEncodeObjectEx(X509_ASN_ENCODING, X509_ECC_SIGNATURE, &eccSig, 0, nullptr, reinterpret_cast<BYTE*>(derSig.data()), &pcbEncoded)) {
+        DWORD err = GetLastError();
+        qWarning() << "[p1363ToDer] CryptEncodeObjectEx encoding FAILED. Error:" << QString::number(err, 16);
+        return {};
+    }
+
+    return derSig;
+}
 
 QByteArray WindowsKeyStore::signData(const QByteArray &data)
 {
@@ -110,7 +158,7 @@ QByteArray WindowsKeyStore::signData(const QByteArray &data)
         "$sig = $signer.SignData($data, [System.Security.Cryptography.HashAlgorithmName]::SHA256);"
         "$key.Dispose();"
         "Write-Output ([Convert]::ToBase64String($sig));"
-    ).arg(providerParam(), QLatin1String(kKeyName), b64Data);
+    ).arg(providerParam(), QLatin1String("IITDelhiVPNKey"), b64Data);
 
     const QByteArray output = runPowerShell(script).trimmed();
     if (output.isEmpty()) {
@@ -118,7 +166,13 @@ QByteArray WindowsKeyStore::signData(const QByteArray &data)
         return {};
     }
 
-    return QByteArray::fromBase64(output);
+    const QByteArray p1363Sig = QByteArray::fromBase64(output);
+    qDebug() << "[WindowsKeyStore] P1363 signature (b64):" << p1363Sig.toBase64();
+
+    const QByteArray derSig = p1363ToDer(p1363Sig);
+    qDebug() << "[WindowsKeyStore] DER signature (b64):" << derSig.toBase64();
+
+    return derSig;
 }
 
 QByteArray WindowsKeyStore::generateCsr(const QString &username,
