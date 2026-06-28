@@ -1,5 +1,6 @@
 #include "certificatedownloadservice.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QNetworkAccessManager>
@@ -36,7 +37,6 @@ bool containsInsensitive(const QString &html, const char *needle)
 
 CertificateDownloadService::CertificateDownloadService(QObject *parent)
     : QObject(parent)
-    , settings("IIT Delhi", "IITDelhiVPN")
 {
     certManager = new QNetworkAccessManager(this);
     certManager->setCookieJar(new QNetworkCookieJar(certManager));
@@ -44,45 +44,38 @@ CertificateDownloadService::CertificateDownloadService(QObject *parent)
 
 QString CertificateDownloadService::downloadedOvpnPath() const
 {
-    return downloadedOvpnPathValue;
+    return makeDownloadPath();
 }
 
 void CertificateDownloadService::loadSavedCertificateState()
 {
-    certificateDownloaded = settings.value("certificate/downloaded", false).toBool();
-    downloadedOvpnPathValue = settings.value("certificate/path").toString();
-    certUser = settings.value("certificate/user").toString();
-
-    if (certificateDownloaded && !downloadedOvpnPathValue.isEmpty() && QFile::exists(downloadedOvpnPathValue)) {
-        emit savedCertificateAvailable(downloadedOvpnPathValue);
+    const QString path = makeDownloadPath();
+    if (!path.isEmpty() && QFile::exists(path)) {
+        emit savedCertificateAvailable(path);
         return;
     }
 
-    clearSavedCertificateState();
     emit savedCertificateUnavailable();
 }
 
 void CertificateDownloadService::startCertificateDownload(const QString &username, const QString &password)
 {
-    certUser = username.trimmed();
-    saveCertificateState();
+    currentUser = username.trimmed();
 
-    if (certUser.isEmpty() || password.isEmpty()) {
+    if (currentUser.isEmpty() || password.isEmpty()) {
         emit warningOccurred("Missing details", "Enter both username and password.");
         return;
     }
 
-    const QString targetPath = makeDownloadPath(certUser);
+    const QString targetPath = makeDownloadPath();
     if (targetPath.isEmpty()) {
         emit criticalOccurred("Download error", "Could not prepare the download folder.");
         return;
     }
 
-    downloadedOvpnPathValue = targetPath;
-
-    if (certificateDownloaded && QFile::exists(downloadedOvpnPathValue)) {
-        emit informationOccurred("Certificate ready", QStringLiteral("Using the existing OVPN file:\n%1").arg(downloadedOvpnPathValue));
-        emit savedCertificateAvailable(downloadedOvpnPathValue);
+    if (QFile::exists(targetPath)) {
+        emit informationOccurred("Certificate ready", QStringLiteral("Using the existing OVPN file:\n%1").arg(targetPath));
+        emit savedCertificateAvailable(targetPath);
         return;
     }
 
@@ -90,7 +83,7 @@ void CertificateDownloadService::startCertificateDownload(const QString &usernam
     emit statusMessage(QStringLiteral("Downloading certificate..."));
 
     QUrlQuery query;
-    query.addQueryItem("user", certUser);
+    query.addQueryItem("user", currentUser);
     query.addQueryItem("passwd", password);
 
     connect(certManager, &QNetworkAccessManager::finished,
@@ -98,24 +91,6 @@ void CertificateDownloadService::startCertificateDownload(const QString &usernam
             Qt::SingleShotConnection);
 
     sendCertificateRequest(QUrl(kLoginUrl), query.toString(QUrl::FullyEncoded).toUtf8());
-}
-
-void CertificateDownloadService::saveCertificateState()
-{
-    settings.setValue("certificate/downloaded", certificateDownloaded);
-    settings.setValue("certificate/path", downloadedOvpnPathValue);
-    settings.setValue("certificate/user", certUser);
-    settings.sync();
-}
-
-void CertificateDownloadService::clearSavedCertificateState()
-{
-    certificateDownloaded = false;
-    downloadedOvpnPathValue.clear();
-    certUser.clear();
-    settings.remove("certificate/downloaded");
-    settings.remove("certificate/path");
-    settings.remove("certificate/user");
 }
 
 QString CertificateDownloadService::extractHiddenField(const QString &html, const QString &name) const
@@ -129,20 +104,32 @@ QString CertificateDownloadService::extractHiddenField(const QString &html, cons
     return match.hasMatch() ? match.captured(1) : QString();
 }
 
-QString CertificateDownloadService::makeDownloadPath(const QString &username) const
+QString CertificateDownloadService::makeDownloadPath() const
 {
-    QString basePath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    if (basePath.isEmpty()) {
-        basePath = QDir::homePath();
-    }
+    QDir baseDir;
 
-    QDir dir(basePath);
-    if (!dir.mkpath("IITDelhiVPN")) {
+#ifdef Q_OS_WIN
+    // Windows: one level up from the binary directory
+    baseDir = QDir(QCoreApplication::applicationDirPath());
+    baseDir.cdUp();
+#elif defined(Q_OS_MAC)
+    // macOS: one level up from the binary directory (MacOS -> Contents)
+    baseDir = QDir(QCoreApplication::applicationDirPath());
+    baseDir.cdUp();
+#else
+    // Linux: use standard writable app data location
+    const QString basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (basePath.isEmpty()) {
+        return {};
+    }
+    baseDir = QDir(basePath);
+#endif
+
+    if (!baseDir.mkpath("configurations")) {
         return {};
     }
 
-    const QString safeName = username.trimmed().isEmpty() ? QStringLiteral("iitdelhi-vpn") : username.trimmed();
-    return dir.filePath(QStringLiteral("IITDelhiVPN/%1.ovpn").arg(safeName));
+    return baseDir.filePath(QStringLiteral("configurations/iitdconnect.ovpn"));
 }
 
 void CertificateDownloadService::sendCertificateRequest(const QUrl &url, const QByteArray &body)
@@ -174,10 +161,10 @@ void CertificateDownloadService::handleInitialResponse(QNetworkReply *reply)
         return;
     }
 
-    certSession = extractHiddenField(html, "session");
-    certControl = extractHiddenField(html, "control");
-    certEmail = extractHiddenField(html, "email");
-    certCategory = extractHiddenField(html, "category");
+    const QString certSession = extractHiddenField(html, "session");
+    const QString certControl = extractHiddenField(html, "control");
+    const QString certEmail = extractHiddenField(html, "email");
+    const QString certCategory = extractHiddenField(html, "category");
 
     if (certSession.isEmpty() || certControl.isEmpty() || certEmail.isEmpty() || certCategory.isEmpty()) {
         emit busyChanged(false);
@@ -186,7 +173,7 @@ void CertificateDownloadService::handleInitialResponse(QNetworkReply *reply)
     }
 
     QUrlQuery query;
-    query.addQueryItem("user", certUser);
+    query.addQueryItem("user", currentUser);
     query.addQueryItem("session", certSession);
     query.addQueryItem("control", certControl);
     query.addQueryItem("email", certEmail);
@@ -229,21 +216,19 @@ void CertificateDownloadService::handleDownloadResponse(QNetworkReply *reply)
         return;
     }
 
-    QFile file(downloadedOvpnPathValue);
+    const QString path = makeDownloadPath();
+    QFile file(path);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         emit busyChanged(false);
-        emit criticalOccurred("Download error", QStringLiteral("Could not save the OVPN file to %1").arg(downloadedOvpnPathValue));
+        emit criticalOccurred("Download error", QStringLiteral("Could not save the OVPN file to %1").arg(path));
         return;
     }
 
     file.write(ovpnData);
     file.close();
 
-    certificateDownloaded = true;
-    saveCertificateState();
-
     emit busyChanged(false);
-    emit statusMessage(QStringLiteral("Certificate downloaded to %1").arg(downloadedOvpnPathValue));
-    emit savedCertificateAvailable(downloadedOvpnPathValue);
-    emit informationOccurred("Download complete", QStringLiteral("OVPN file saved to:\n%1").arg(downloadedOvpnPathValue));
+    emit statusMessage(QStringLiteral("Certificate downloaded to %1").arg(path));
+    emit savedCertificateAvailable(path);
+    emit informationOccurred("Download complete", QStringLiteral("OVPN file saved to:\n%1").arg(path));
 }

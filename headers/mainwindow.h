@@ -75,13 +75,7 @@ private:
     void setInitialFlow();
     void setConnectFlow();
     void loadSavedCertificateState();
-    void saveCertificateState();
     void startCertificateDownload();
-    void handleInitialResponse(class QNetworkReply *reply);
-    void handleDownloadResponse(class QNetworkReply *reply);
-    void sendCertificateRequest(const QUrl &url, const QByteArray &body);
-    QString extractHiddenField(const QString &html, const QString &name) const;
-    QString makeDownloadPath(const QString &username) const;
     void applyTheme(bool dark);
     void setupConnectingScreen();
     void showConnectPage();

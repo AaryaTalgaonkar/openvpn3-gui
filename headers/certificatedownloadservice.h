@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QObject>
-#include <QSettings>
 
 class QByteArray;
 class QNetworkAccessManager;
@@ -35,19 +34,9 @@ private slots:
 
 private:
     QNetworkAccessManager *certManager = nullptr;
-    QSettings settings;
+    QString currentUser;
 
-    QString downloadedOvpnPathValue;
-    QString certUser;
-    QString certSession;
-    QString certControl;
-    QString certEmail;
-    QString certCategory;
-    bool certificateDownloaded = false;
-
-    void saveCertificateState();
-    void clearSavedCertificateState();
     void sendCertificateRequest(const QUrl &url, const QByteArray &body);
     QString extractHiddenField(const QString &html, const QString &name) const;
-    QString makeDownloadPath(const QString &username) const;
+    QString makeDownloadPath() const;
 };
