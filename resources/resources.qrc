@@ -12,5 +12,6 @@
         <file>fonts/TitilliumWeb-SemiBold.ttf</file>
         <file>fonts/TitilliumWeb-SemiBoldItalic.ttf</file>
         <file>img/logo.png</file>
+        <file>img/campus.png</file>
     </qresource>
 </RCC>

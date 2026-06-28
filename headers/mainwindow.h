@@ -8,6 +8,7 @@
 class QLabel;
 class QTimer;
 
+#include "ikeystore.h"
 #include "ivpnbackend.h"
 #include "certificatedownloadservice.h"
 #include "connectionprogresswidget.h"
@@ -17,6 +18,7 @@ class QTimer;
 #include "ui_connectscreen.h"
 #include "ui_connectingscreen.h"
 #include "ui_disconnectscreen.h"
+#include "ui_getstarted.h"
 
 class MainWindow : public QMainWindow
 {
@@ -27,6 +29,7 @@ public:
     ~MainWindow();
 
 private slots:
+    void handleGetStartedClicked();
     void handleDownloadButtonClicked();
     void handleConnectButtonClicked();
     void on_themeToggleButton_clicked();
@@ -42,7 +45,9 @@ private:
     Ui::ConnectScreen connectUi;
     Ui::ConnectingScreen connectingUi;
     Ui::DisconnectScreen disconnectUi;
+    Ui::GetStarted getStartedUi;
     std::unique_ptr<IVpnBackend> backend;
+    std::unique_ptr<IKeyStore> keystore;
     CertificateDownloadService certificateService;
     TrafficGraphWidget *trafficGraphWidget = nullptr;
     QStringList recentConnectionLogs;

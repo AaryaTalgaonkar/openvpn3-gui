@@ -32,8 +32,13 @@
 
 #ifdef Q_OS_LINUX
 #include "linuxvpnbackend.h"
-#elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
+#include "linuxkeystore.h"
+#elif defined(Q_OS_WIN)
 #include "winmacvpnbackend.h"
+#include "windowskeystore.h"
+#elif defined(Q_OS_MAC)
+#include "winmacvpnbackend.h"
+#include "mackeystore.h"
 #endif
 
 namespace {
@@ -151,11 +156,22 @@ MainWindow::MainWindow(QWidget *parent)
     connectUi.setupUi(ui->connectPage);
     connectingUi.setupUi(ui->connectingPage);
     disconnectUi.setupUi(ui->disconnectPage);
+    getStartedUi.setupUi(ui->getStartedPage);
+    ui->rootStack->setCurrentWidget(ui->normalContentPage);
 
 #ifdef Q_OS_LINUX
     backend = std::make_unique<LinuxVpnBackend>(this);
 #elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
     backend = std::make_unique<WinMacVpnBackend>(this);
+#endif
+
+    // Create platform-specific keystore
+#ifdef Q_OS_LINUX
+    keystore = std::make_unique<LinuxKeyStore>(this);
+#elif defined(Q_OS_WIN)
+    keystore = std::make_unique<WindowsKeyStore>(this);
+#elif defined(Q_OS_MAC)
+    keystore = std::make_unique<MacKeyStore>(this);
 #endif
 
     // Create and set up the connection progress widget (self-contained)
@@ -191,11 +207,12 @@ MainWindow::MainWindow(QWidget *parent)
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
     connect(certBox, &CertificateBoxWidget::generateClicked,
             this, &MainWindow::handleDownloadButtonClicked);
+    connect(getStartedUi.getStartedButton, &QPushButton::clicked,
+            this, &MainWindow::handleGetStartedClicked);
     connect(connectUi.connectButton, &QPushButton::clicked,
             this, &MainWindow::handleConnectButtonClicked);
     connect(disconnectUi.disconnectButton, &QPushButton::clicked,
             this, &MainWindow::handleConnectButtonClicked);
-    loadSavedCertificateState();
 
     connect(backend.get(), &IVpnBackend::stateChanged,
             this, &MainWindow::handleVpnStateChanged);
@@ -263,6 +280,26 @@ MainWindow::MainWindow(QWidget *parent)
                 certBox->updateValidityDisplay(QDateTime::currentDateTimeUtc());
             });
 
+    // Check if the platform key exists to decide which screen to show
+    if (keystore && keystore->checkKeyExists()) {
+        // Key exists — proceed with existing certificate check flow
+        loadSavedCertificateState();
+    } else {
+        // Key does NOT exist — show the Get Started page (full page, no top bar)
+        ui->rootStack->setCurrentWidget(ui->getStartedPage);
+    }
+}
+
+void MainWindow::handleGetStartedClicked()
+{
+    if (!keystore) {
+        return;
+    }
+
+    // Generate the platform key
+    keystore->generateKey();
+
+    // After generating the key, check for saved certificate
     loadSavedCertificateState();
 }
 
@@ -273,6 +310,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::setInitialFlow()
 {
+    ui->rootStack->setCurrentWidget(ui->normalContentPage);
     ui->screenStack->setCurrentWidget(ui->connectPage);
     certBox->showNoCertMode();
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
@@ -283,6 +321,7 @@ void MainWindow::setInitialFlow()
 
 void MainWindow::setConnectFlow()
 {
+    ui->rootStack->setCurrentWidget(ui->normalContentPage);
     ui->screenStack->setCurrentWidget(ui->connectPage);
     updateCertificateInfoBox();
     showConnectPage();
@@ -305,10 +344,6 @@ void MainWindow::applyTheme(bool dark)
             QPushButton { background-color: #1b1b1b; color: #e6e6e6; border: 1px solid #2f2f2f; border-radius: 6px; padding: 6px 10px; }
             QPushButton:hover { background-color: rgba(194,23,23,0.10); }
             QPushButton:pressed { background-color: rgba(194,23,23,0.18); }
-            QPushButton#themeToggleButton { border-radius: 14px; background-color: transparent; border: 1px solid rgba(255,255,255,0.06); }
-            QPushButton#themeToggleButton:hover { background-color: rgba(194,23,23,0.12); }
-            QPushButton#logsButton { border-radius: 14px; background-color: transparent; border: 1px solid rgba(255,255,255,0.06); }
-            QPushButton#logsButton:hover { background-color: rgba(194,23,23,0.12); }
             QStatusBar { background: transparent; color: #bdbdbd; }
             QDialog, QMessageBox { background-color: #121212; color: #e6e6e6; }
             QMessageBox QPushButton { background-color: #2b2b2b; color: #e6e6e6; border: 1px solid #363636; border-radius: 6px; padding: 4px 8px; }
@@ -322,10 +357,6 @@ void MainWindow::applyTheme(bool dark)
             QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus { border: 1px solid %1; }
             QPushButton { background-color: #f5f5f5; color: #1f1f1f; border: 1px solid #e6e6e6; border-radius: 6px; padding: 6px 10px; }
             QPushButton:hover { background-color: rgba(194,23,23,0.08); }
-            QPushButton#themeToggleButton { border-radius: 14px; background-color: transparent; border: 1px solid rgba(0,0,0,0.06); }
-            QPushButton#themeToggleButton:hover { background-color: rgba(194,23,23,0.12); }
-            QPushButton#logsButton { border-radius: 14px; background-color: transparent; border: 1px solid rgba(0,0,0,0.06); }
-            QPushButton#logsButton:hover { background-color: rgba(194,23,23,0.12); }
             QStatusBar { background: transparent; color: #666666; }
             QDialog, QMessageBox { background-color: #ffffff; color: #1f1f1f; }
             QMessageBox QPushButton { background-color: #ffffff; color: #1f1f1f; border: 1px solid #cccccc; border-radius: 6px; padding: 4px 8px; }
