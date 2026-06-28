@@ -4,6 +4,7 @@
 #include <QTimer>
 
 class QNetworkReply;
+class IKeyStore;
 
 class CertificateDownloadService : public QObject
 {
@@ -11,6 +12,9 @@ class CertificateDownloadService : public QObject
 
 public:
     explicit CertificateDownloadService(QObject *parent = nullptr);
+    ~CertificateDownloadService() override;
+
+    void setKeyStore(IKeyStore *keystore);
 
     void loadSavedCertificateState();
     void startCertificateDownload(const QString &username, const QString &password);
@@ -31,11 +35,23 @@ signals:
     void googleTimeReceived(const QDateTime &time);
     void googleTimeFetchFailed();
 
+    void authenticationComplete(const QString &email);
+    void csrGenerated(const QByteArray &csrData);
+    void downloadProgressChanged(int percent);
+
 private slots:
     void handleGoogleTimeReply(QNetworkReply *reply);
     void retryFetchGoogleTime();
 
 private:
+    void authenticateUser();
+    void generateCsr();
+    void submitCsr();
+
+    IKeyStore *keystore = nullptr;
     QString currentUser;
+    QString currentPassword;
+    QString currentEmail;
+    QByteArray currentCsrData;
     QTimer *googleRetryTimer = nullptr;
 };

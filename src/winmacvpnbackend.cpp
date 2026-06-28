@@ -127,7 +127,8 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
         "--connection-timeout", "10",
         "--management", "127.0.0.1", "7505",
         "--management-query-passwords",
-        "--auth-use-cert-cn-username"
+        "--auth-use-cert-cn-username",
+        "--management-external-key"
     };
 
     vpnProcess->start(resolveOpenVpnBinary(), args);

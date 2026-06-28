@@ -7,7 +7,6 @@
 #include <QDir>
 #include <QFile>
 #include <QProcess>
-#include <QTemporaryDir>
 #include <QTextStream>
 
 QString WindowsKeyStore::providerParam()
@@ -60,14 +59,14 @@ WindowsKeyStore::WindowsKeyStore(QObject *parent)
 bool WindowsKeyStore::checkKeyExists()
 {
     const QString script = QStringLiteral(
-        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");\n"
-        "try {\n"
-        "    $key = [System.Security.Cryptography.CngKey]::Open(\"%2\", $prov);\n"
-        "    $key.Dispose();\n"
-        "    Write-Output \"true\";\n"
-        "} catch {\n"
-        "    Write-Output \"false\";\n"
-        "}\n"
+        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");"
+        "try {"
+        "    $key = [System.Security.Cryptography.CngKey]::Open(\"%2\", $prov);"
+        "    $key.Dispose();"
+        "    Write-Output \"true\";"
+        "} catch {"
+        "    Write-Output \"false\";"
+        "}"
     ).arg(providerParam(), QLatin1String(kKeyName));
 
     const QByteArray output = runPowerShell(script);
@@ -77,17 +76,17 @@ bool WindowsKeyStore::checkKeyExists()
 void WindowsKeyStore::generateKey()
 {
     const QString script = QStringLiteral(
-        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");\n"
-        "$params = New-Object System.Security.Cryptography.CngKeyCreationParameters;\n"
-        "$params.Provider = $prov;\n"
-        "$params.KeyCreationOptions = [System.Security.Cryptography.CngKeyCreationOptions]::OverwriteExistingKey;\n"
-        "$key = [System.Security.Cryptography.CngKey]::Create(\n"
-        "    [System.Security.Cryptography.CngAlgorithm]::ECDsaP256,\n"
-        "    \"%2\",\n"
-        "    $params\n"
-        ");\n"
-        "$key.Dispose();\n"
-        "Write-Output \"OK\";\n"
+        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");"
+        "$params = New-Object System.Security.Cryptography.CngKeyCreationParameters;"
+        "$params.Provider = $prov;"
+        "$params.KeyCreationOptions = [System.Security.Cryptography.CngKeyCreationOptions]::OverwriteExistingKey;"
+        "$key = [System.Security.Cryptography.CngKey]::Create("
+        "    [System.Security.Cryptography.CngAlgorithm]::ECDsaP256,"
+        "    \"%2\","
+        "    $params"
+        ");"
+        "$key.Dispose();"
+        "Write-Output \"OK\";"
     ).arg(providerParam(), QLatin1String(kKeyName));
 
     const QByteArray output = runPowerShell(script);
@@ -104,13 +103,13 @@ QByteArray WindowsKeyStore::signData(const QByteArray &data)
     const QString b64Data = QString::fromLatin1(data.toBase64());
 
     const QString script = QStringLiteral(
-        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");\n"
-        "$key = [System.Security.Cryptography.CngKey]::Open(\"%2\", $prov);\n"
-        "$signer = New-Object System.Security.Cryptography.ECDsaCng($key);\n"
-        "$data = [Convert]::FromBase64String(\"%3\");\n"
-        "$sig = $signer.SignData($data, [System.Security.Cryptography.HashAlgorithmName]::SHA256);\n"
-        "$key.Dispose();\n"
-        "Write-Output ([Convert]::ToBase64String($sig));\n"
+        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");"
+        "$key = [System.Security.Cryptography.CngKey]::Open(\"%2\", $prov);"
+        "$signer = New-Object System.Security.Cryptography.ECDsaCng($key);"
+        "$data = [Convert]::FromBase64String(\"%3\");"
+        "$sig = $signer.SignData($data, [System.Security.Cryptography.HashAlgorithmName]::SHA256);"
+        "$key.Dispose();"
+        "Write-Output ([Convert]::ToBase64String($sig));"
     ).arg(providerParam(), QLatin1String(kKeyName), b64Data);
 
     const QByteArray output = runPowerShell(script).trimmed();
@@ -131,33 +130,33 @@ QByteArray WindowsKeyStore::generateCsr(const QString &username,
     const QString infContent = QStringLiteral(
         "[Version]\n"
         "Signature=\"$Windows NT$\"\n"
-        "\n"
         "[NewRequest]\n"
         "Subject = \"C=IN, S=Delhi, L=New Delhi, "
         "O=\"\"Indian Institute of Technology, Delhi\"\", "
         "OU=\"\"Computer Services Center, IITD\"\", "
         "CN=%1, E=%2\"\n"
-        "\n"
         "ProviderName = \"%3\"\n"
         "KeyContainer = \"%4\"\n"
         "UseExistingKeySet = True\n"
-        "\n"
         "KeyAlgorithm = ECDSA_P256\n"
         "HashAlgorithm = SHA256\n"
-        "\n"
         "RequestType = PKCS10\n"
-        "\n"
-        "KeyUsage = 0x80\n"
+        "KeyUsage = 0x80 ; Digital Signature\n"
     ).arg(safeUser, safeEmail, providerParam(), QLatin1String(kKeyName));
 
-    QTemporaryDir tmpDir;
-    if (!tmpDir.isValid()) {
-        qWarning() << "[WindowsKeyStore] generateCsr: failed to create temp dir.";
+    QDir baseDir(QCoreApplication::applicationDirPath());
+    baseDir.cdUp();
+    if (!baseDir.mkpath("configurations")) {
+        qWarning() << "[WindowsKeyStore] generateCsr: cannot create config dir.";
         return {};
     }
 
-    const QString infPath = tmpDir.filePath(QStringLiteral("request.inf"));
-    const QString csrPath = tmpDir.filePath(QStringLiteral("request.csr"));
+    const QString stableDir = baseDir.filePath(QStringLiteral("configurations"));
+    const QString infPath = QDir(stableDir).filePath(QStringLiteral("request.inf"));
+    const QString csrPath = QDir(stableDir).filePath(QStringLiteral("request.csr"));
+
+    QFile::remove(infPath);
+    QFile::remove(csrPath);
 
     {
         QFile infFile(infPath);
@@ -173,19 +172,22 @@ QByteArray WindowsKeyStore::generateCsr(const QString &username,
 
     QProcess certReq;
     certReq.start(QStringLiteral("certreq.exe"),
-                  {
-                      QStringLiteral("-new"),
-                      infPath,
-                      csrPath
-                  });
+                {
+                    QStringLiteral("-new"),
+                    QDir::toNativeSeparators(infPath), 
+                    QDir::toNativeSeparators(csrPath) 
+                });
 
     const bool finished = certReq.waitForFinished(60000);
     const QByteArray csrStdErr = certReq.readAllStandardError();
+
+    QFile::remove(infPath);
 
     if (!finished || certReq.exitCode() != 0) {
         qWarning() << "[WindowsKeyStore] generateCsr: certreq.exe failed."
                     << "Exit code:" << certReq.exitCode()
                     << "Stderr:" << csrStdErr;
+        QFile::remove(csrPath);
         return {};
     }
 
@@ -199,16 +201,18 @@ QByteArray WindowsKeyStore::generateCsr(const QString &username,
     const QByteArray csrData = csrFile.readAll();
     csrFile.close();
 
+    QFile::remove(csrPath);
+
     return csrData;
 }
 
 void WindowsKeyStore::clearKey()
 {
     const QString script = QStringLiteral(
-        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");\n"
-        "$key = [System.Security.Cryptography.CngKey]::Open(\"%2\", $prov);\n"
-        "$key.Delete();\n"
-        "Write-Output \"OK\";\n"
+        "$prov = New-Object System.Security.Cryptography.CngProvider(\"%1\");"
+        "$key = [System.Security.Cryptography.CngKey]::Open(\"%2\", $prov);"
+        "$key.Delete();"
+        "Write-Output \"OK\";"
     ).arg(providerParam(), QLatin1String(kKeyName));
 
     const QByteArray output = runPowerShell(script);

@@ -1,4 +1,5 @@
 #include "certificatedownloadservice.h"
+#include "ikeystore.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -204,6 +205,15 @@ CertificateDownloadService::CertificateDownloadService(QObject *parent)
     connect(googleRetryTimer, &QTimer::timeout, this, &CertificateDownloadService::retryFetchGoogleTime);
 }
 
+CertificateDownloadService::~CertificateDownloadService()
+{
+}
+
+void CertificateDownloadService::setKeyStore(IKeyStore *ks)
+{
+    keystore = ks;
+}
+
 QString CertificateDownloadService::downloadedOvpnPath() const
 {
     return makeDownloadPath();
@@ -286,9 +296,15 @@ void CertificateDownloadService::retryFetchGoogleTime()
 void CertificateDownloadService::startCertificateDownload(const QString &username, const QString &password)
 {
     currentUser = username.trimmed();
+    currentPassword = password;
 
-    if (currentUser.isEmpty() || password.isEmpty()) {
+    if (currentUser.isEmpty() || currentPassword.isEmpty()) {
         emit warningOccurred("Missing details", "Enter both username and password.");
+        return;
+    }
+
+    if (!keystore) {
+        emit criticalOccurred("Keystore error", "No keystore available for CSR generation.");
         return;
     }
 
@@ -305,21 +321,81 @@ void CertificateDownloadService::startCertificateDownload(const QString &usernam
     }
 
     emit busyChanged(true);
-    emit statusMessage(QStringLiteral("Downloading certificate..."));
 
-    // Write the hardcoded OVPN content to file
-    QFile file(targetPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    // Show the download progress UI
+    emit downloadProgressChanged(0);
+
+    // Start Stage 1: Authenticate with the server
+    authenticateUser();
+}
+
+void CertificateDownloadService::authenticateUser()
+{
+    emit statusMessage(QStringLiteral("Authenticating..."));
+
+    // Mock the server authentication: after a short delay, return the email address
+    QTimer::singleShot(1500, this, [this]() {
+        // Mocked server response: email address for the user
+        currentEmail = QStringLiteral("cs5221646@cse.iitd.ernet.in");
+
+        emit statusMessage(QStringLiteral("Email received: %1").arg(currentEmail));
+        emit authenticationComplete(currentEmail);
+        emit downloadProgressChanged(33);
+
+        // Proceed to Stage 2: Generate CSR using the keystore
+        generateCsr();
+    });
+}
+
+void CertificateDownloadService::generateCsr()
+{
+    emit statusMessage(QStringLiteral("Generating CSR..."));
+
+    // Use the platform keystore to generate the CSR
+    currentCsrData = keystore->generateCsr(currentUser, currentEmail);
+
+    if (currentCsrData.isEmpty()) {
         emit busyChanged(false);
-        emit criticalOccurred("Download error", QStringLiteral("Could not save the OVPN file to %1").arg(targetPath));
+        emit criticalOccurred("CSR Error", "Keystore failed to generate CSR.");
         return;
     }
 
-    file.write(kOvpnContent);
-    file.close();
+    emit statusMessage(QStringLiteral("CSR generated successfully"));
+    emit csrGenerated(currentCsrData);
+    emit downloadProgressChanged(66);
 
-    emit busyChanged(false);
-    emit statusMessage(QStringLiteral("Certificate downloaded to %1").arg(targetPath));
-    emit savedCertificateAvailable(targetPath);
-    emit informationOccurred("Download complete", QStringLiteral("OVPN file saved to:\n%1").arg(targetPath));
+    // Proceed to Stage 3: Submit CSR to server
+    submitCsr();
+}
+
+void CertificateDownloadService::submitCsr()
+{
+    emit statusMessage(QStringLiteral("Submitting CSR to server..."));
+
+    // Mock the server submission: after a short delay, write the OVPN file
+    QTimer::singleShot(1500, this, [this]() {
+        const QString targetPath = makeDownloadPath();
+        if (targetPath.isEmpty()) {
+            emit busyChanged(false);
+            emit criticalOccurred("Download error", "Could not prepare the download folder.");
+            return;
+        }
+
+        // Write the hardcoded OVPN content to file (mocked server response)
+        QFile file(targetPath);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            emit busyChanged(false);
+            emit criticalOccurred("Download error", QStringLiteral("Could not save the OVPN file to %1").arg(targetPath));
+            return;
+        }
+
+        file.write(kOvpnContent);
+        file.close();
+
+        emit busyChanged(false);
+        emit downloadProgressChanged(100);
+        emit statusMessage(QStringLiteral("Certificate downloaded to %1").arg(targetPath));
+        emit savedCertificateAvailable(targetPath);
+        emit informationOccurred("Download complete", QStringLiteral("OVPN file saved to:\n%1").arg(targetPath));
+    });
 }

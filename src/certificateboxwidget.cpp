@@ -1,5 +1,9 @@
 #include "certificateboxwidget.h"
 
+#include <QFile>
+#include <QRegularExpression>
+#include <QSslCertificate>
+
 CertificateBoxWidget::CertificateBoxWidget(QWidget *parent)
     : QFrame(parent)
     , m_ui(new Ui::CertificateBox)
@@ -40,6 +44,45 @@ void CertificateBoxWidget::showCertInfo(const QString &cn, const QString &org, c
     // Show time remaining using local system time initially;
     // will be refined when Google time arrives.
     updateValidityDisplay(QDateTime::currentDateTimeUtc());
+}
+
+void CertificateBoxWidget::loadFromOvpnFile(const QString &ovpnPath)
+{
+    QFile file(ovpnPath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return;
+    }
+
+    const QString content = QString::fromUtf8(file.readAll());
+    file.close();
+
+    // Extract the <cert> ... </cert> section
+    QRegularExpression certRegex(QStringLiteral("<cert>\\s*(-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----)\\s*</cert>"),
+                                 QRegularExpression::CaseInsensitiveOption);
+    const QRegularExpressionMatch certMatch = certRegex.match(content);
+    if (!certMatch.hasMatch()) {
+        return;
+    }
+
+    const QString pemData = certMatch.captured(1).trimmed();
+
+    const QList<QSslCertificate> certs = QSslCertificate::fromData(pemData.toUtf8(), QSsl::Pem);
+    if (certs.isEmpty()) {
+        return;
+    }
+
+    const QSslCertificate &cert = certs.first();
+
+    // Extract subject details
+    const QString cn = cert.subjectInfo(QSslCertificate::CommonName).value(0, QStringLiteral("—"));
+    const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
+    const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
+
+    // Populate the UI via the existing helper
+    showCertInfo(cn, org, email, cert.effectiveDate().toUTC(), cert.expiryDate().toUTC());
+
+    // Notify the owner (e.g. MainWindow) that parsing succeeded
+    emit certificateParsed();
 }
 
 void CertificateBoxWidget::updateValidityDisplay(const QDateTime &now)
@@ -110,4 +153,24 @@ void CertificateBoxWidget::setGenerateEnabled(bool enabled)
 void CertificateBoxWidget::setGenerateButtonText(const QString &text)
 {
     m_ui->generateButton->setText(text);
+}
+
+void CertificateBoxWidget::showDownloadProgress(bool show)
+{
+    m_ui->downloadProgress->setVisible(show);
+    m_ui->downloadStatusLabel->setVisible(show);
+    if (!show) {
+        m_ui->downloadProgress->setValue(0);
+        m_ui->downloadStatusLabel->clear();
+    }
+}
+
+void CertificateBoxWidget::setDownloadStatus(const QString &text)
+{
+    m_ui->downloadStatusLabel->setText(text);
+}
+
+void CertificateBoxWidget::setDownloadProgress(int value)
+{
+    m_ui->downloadProgress->setValue(value);
 }

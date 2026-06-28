@@ -174,6 +174,9 @@ MainWindow::MainWindow(QWidget *parent)
     keystore = std::make_unique<MacKeyStore>(this);
 #endif
 
+    // Pass the keystore to the certificate download service for CSR generation
+    certificateService.setKeyStore(keystore.get());
+
     // Create and set up the connection progress widget (self-contained)
     {
         auto *progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);
@@ -247,12 +250,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&certificateService, &CertificateDownloadService::busyChanged,
             this, [this](bool busy) {
                 certBox->setGenerateEnabled(!busy);
-                certBox->setGenerateButtonText(busy ? "Downloading..." : "Generate");
+                certBox->showDownloadProgress(busy);
+                if (!busy) {
+                    certBox->setDownloadProgress(0);
+                }
+            });
+
+    connect(&certificateService, &CertificateDownloadService::downloadProgressChanged,
+            this, [this](int percent) {
+                certBox->setDownloadProgress(percent);
             });
 
     connect(&certificateService, &CertificateDownloadService::statusMessage,
             this, [this](const QString &message) {
                 ui->statusbar->showMessage(message, 5000);
+                certBox->setDownloadStatus(message);
             });
 
     connect(&certificateService, &CertificateDownloadService::warningOccurred,
@@ -268,6 +280,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&certificateService, &CertificateDownloadService::informationOccurred,
             this, [this](const QString &title, const QString &message) {
                 QMessageBox::information(this, title, message);
+            });
+
+    // When the certificate box parses an OVPN file, fetch accurate Google time
+    connect(certBox, &CertificateBoxWidget::certificateParsed,
+            this, [this]() {
+                certificateService.fetchGoogleTime();
             });
 
     // Connect Google time sync signals from CertificateDownloadService
@@ -400,41 +418,10 @@ void MainWindow::updateCertificateInfoBox()
         return;
     }
 
-    QFile file(ovpnPath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return;
-    }
-
-    const QString content = QString::fromUtf8(file.readAll());
-    file.close();
-
-    // Extract the <cert> ... </cert> section
-    QRegularExpression certRegex(QStringLiteral("<cert>\\s*(-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----)\\s*</cert>"),
-                                 QRegularExpression::CaseInsensitiveOption);
-    const QRegularExpressionMatch certMatch = certRegex.match(content);
-    if (!certMatch.hasMatch()) {
-        return;
-    }
-
-    const QString pemData = certMatch.captured(1).trimmed();
-
-    const QList<QSslCertificate> certs = QSslCertificate::fromData(pemData.toUtf8(), QSsl::Pem);
-    if (certs.isEmpty()) {
-        return;
-    }
-
-    const QSslCertificate &cert = certs.first();
-
-    // Extract subject details
-    const QString cn = cert.subjectInfo(QSslCertificate::CommonName).value(0, QStringLiteral("—"));
-    const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
-    const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
-
-    // Delegate to the certificate box widget
-    certBox->showCertInfo(cn, org, email, cert.effectiveDate().toUTC(), cert.expiryDate().toUTC());
-
-    // Fetch Google time for accurate certificate validity display
-    certificateService.fetchGoogleTime();
+    // Delegate OVPN parsing to the certificate box widget.
+    // On success it will emit certificateParsed(), which triggers
+    // the Google time fetch connected in the constructor.
+    certBox->loadFromOvpnFile(ovpnPath);
 }
 
 void MainWindow::handleVpnStateChanged(const QString &state)
