@@ -5,8 +5,10 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QFutureWatcher>
 #include <QProcess>
 #include <QTcpSocket>
+#include <QtConcurrent/QtConcurrent>
 
 class IKeyStore;
 
@@ -36,6 +38,7 @@ public:
 
 private slots:
     void onMgmtReadyRead();
+    void onSignDataFinished();
 
 private:
     QProcess *vpnProcess = nullptr;
@@ -44,6 +47,8 @@ private:
     IKeyStore *m_keyStore = nullptr;
     VpnConnectionState connectedState = VpnConnectionState::Disconnected;
     int m_currentConnectionStep = -1;
+
+    QFutureWatcher<QByteArray> m_signWatcher;
 
     QString resolveOpenVpnBinary() const;
     void handleMgmtLine(const QByteArray &line);

@@ -3,7 +3,7 @@
 
 #include <QDateTime>
 #include <QStringList>
-
+#include <QtConcurrent/QtConcurrentRun>
 
 const ConnectionStepDefinition WinMacVpnBackend::kWinMacConnectionSteps[] = {
     {"RESOLVE", "🔎", "Resolving server address"},
@@ -91,6 +91,9 @@ WinMacVpnBackend::WinMacVpnBackend(QObject *parent)
 {
     connect(&mgmtSocket, &QTcpSocket::readyRead,
             this, &WinMacVpnBackend::onMgmtReadyRead);
+
+    connect(&m_signWatcher, &QFutureWatcher<QByteArray>::finished,
+            this, &WinMacVpnBackend::onSignDataFinished);
 }
 
 VpnConnectionState WinMacVpnBackend::connectionState() const
@@ -303,18 +306,32 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
             return;
         }
 
-        const QByteArray signature = m_keyStore->signData(rawData);
-        if (signature.isEmpty()) {
-            qWarning() << "[WinMacVpnBackend] RSA_SIGN: keystore returned empty signature.";
+        // If a previous signing operation is still in progress, ignore this request
+        // (OpenVPN will retry if needed)
+        if (m_signWatcher.isRunning()) {
+            qWarning() << "[WinMacVpnBackend] RSA_SIGN: previous signing still in progress, ignoring.";
             return;
         }
 
-
-        mgmtSocket.write("rsa-sig\n");
-        mgmtSocket.write(signature.toBase64() + "\n");
-        mgmtSocket.write("END\n");
-        mgmtSocket.flush();
+        // Run signing on a thread pool to avoid blocking the main/event loop thread
+        m_signWatcher.setFuture(QtConcurrent::run([this, rawData]() {
+            return m_keyStore->signData(rawData);
+        }));
     }
+}
+
+void WinMacVpnBackend::onSignDataFinished()
+{
+    const QByteArray signature = m_signWatcher.result();
+    if (signature.isEmpty()) {
+        qWarning() << "[WinMacVpnBackend] RSA_SIGN: keystore returned empty signature.";
+        return;
+    }
+
+    mgmtSocket.write("rsa-sig\n");
+    mgmtSocket.write(signature.toBase64() + "\n");
+    mgmtSocket.write("END\n");
+    mgmtSocket.flush();
 }
 
 void WinMacVpnBackend::setKeyStore(IKeyStore *keystore)

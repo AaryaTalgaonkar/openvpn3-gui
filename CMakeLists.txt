@@ -15,7 +15,7 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent)
 
 set(PROJECT_SOURCES
 
@@ -106,7 +106,7 @@ endif()
 
 
 
-target_link_libraries(IITDelhiVPN PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(IITDelhiVPN PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
 
 if(WIN32)
     target_link_libraries(IITDelhiVPN PRIVATE Crypt32)

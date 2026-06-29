@@ -167,10 +167,8 @@ QByteArray WindowsKeyStore::signData(const QByteArray &data)
     }
 
     const QByteArray p1363Sig = QByteArray::fromBase64(output);
-    qDebug() << "[WindowsKeyStore] P1363 signature (b64):" << p1363Sig.toBase64();
 
     const QByteArray derSig = p1363ToDer(p1363Sig);
-    qDebug() << "[WindowsKeyStore] DER signature (b64):" << derSig.toBase64();
 
     return derSig;
 }
