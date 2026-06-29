@@ -22,13 +22,13 @@ CertificateBoxWidget::~CertificateBoxWidget()
 
 void CertificateBoxWidget::showNoCertMode()
 {
-    m_ui->certInfoStack->setCurrentIndex(0); // Show "no certificate" page
+    m_ui->certInfoStack->setCurrentIndex(0); 
 }
 
 void CertificateBoxWidget::showCertInfo(const QString &cn, const QString &org, const QString &email,
                                          const QDateTime &effectiveDate, const QDateTime &expiryDate)
 {
-    m_ui->certInfoStack->setCurrentIndex(1); // Show certificate info page
+    m_ui->certInfoStack->setCurrentIndex(1);
 
     m_ui->certUsernameLabel->setText(cn);
     m_ui->certInstituteLabel->setText(org);
@@ -41,8 +41,6 @@ void CertificateBoxWidget::showCertInfo(const QString &cn, const QString &org, c
     m_ui->certStartDateLabel->setText(m_certEffectiveDate.toString(dateFormat));
     m_ui->certEndDateLabel->setText(m_certExpiryDate.toString(dateFormat));
 
-    // Show time remaining using local system time initially;
-    // will be refined when Google time arrives.
     updateValidityDisplay(QDateTime::currentDateTimeUtc());
 }
 
@@ -56,7 +54,6 @@ void CertificateBoxWidget::loadFromOvpnFile(const QString &ovpnPath)
     const QString content = QString::fromUtf8(file.readAll());
     file.close();
 
-    // Extract the <cert> ... </cert> section
     QRegularExpression certRegex(QStringLiteral("<cert>\\s*(-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----)\\s*</cert>"),
                                  QRegularExpression::CaseInsensitiveOption);
     const QRegularExpressionMatch certMatch = certRegex.match(content);
@@ -73,15 +70,12 @@ void CertificateBoxWidget::loadFromOvpnFile(const QString &ovpnPath)
 
     const QSslCertificate &cert = certs.first();
 
-    // Extract subject details
     const QString cn = cert.subjectInfo(QSslCertificate::CommonName).value(0, QStringLiteral("—"));
     const QString org = cert.subjectInfo(QSslCertificate::Organization).value(0, QStringLiteral("—"));
     const QString email = cert.subjectInfo(QSslCertificate::EmailAddress).value(0, QStringLiteral("—"));
 
-    // Populate the UI via the existing helper
     showCertInfo(cn, org, email, cert.effectiveDate().toUTC(), cert.expiryDate().toUTC());
 
-    // Notify the owner (e.g. MainWindow) that parsing succeeded
     emit certificateParsed();
 }
 
@@ -91,7 +85,58 @@ void CertificateBoxWidget::updateValidityDisplay(const QDateTime &now)
         return;
     }
 
-    // Calculate total validity span
+    QString statusText;
+    QString statusColor;
+    QString guidanceText;
+
+    if (now < m_certEffectiveDate) {
+        statusText = QStringLiteral("Not Yet Valid");
+        statusColor = QStringLiteral("#f59e0b"); 
+        guidanceText = QStringLiteral("Your configuration becomes valid on %1.")
+                           .arg(m_certEffectiveDate.toString(QStringLiteral("dd MMM yyyy")));
+    } else if (now > m_certExpiryDate) {
+        statusText = QStringLiteral("Expired");
+        statusColor = QStringLiteral("#dc2626");
+        guidanceText = QStringLiteral("Your configuration has expired. Generate a new one before connecting.");
+    } else {
+        statusText = QStringLiteral("Active");
+        statusColor = QStringLiteral("#16a34a");
+        guidanceText = QStringLiteral("Your configuration is ready. Click the power button to connect.");
+
+        // Check if certificate is expiring within 30 days
+        const qint64 daysUntilExpiry = now.daysTo(m_certExpiryDate);
+        if (daysUntilExpiry <= 30 && daysUntilExpiry >= 0) {
+            guidanceText = QStringLiteral("Your configuration expires in %1 day%2. Generate a new one soon to avoid disruption.")
+                               .arg(daysUntilExpiry)
+                               .arg(daysUntilExpiry == 1 ? QString() : QStringLiteral("s"));
+        }
+    }
+
+    QString bgColor;
+    if (now < m_certEffectiveDate) {
+        bgColor = QStringLiteral("rgba(245,158,11,0.15)"); 
+    } else if (now > m_certExpiryDate) {
+        bgColor = QStringLiteral("rgba(220,38,38,0.15)");   
+    } else {
+        bgColor = QStringLiteral("rgba(22,163,74,0.15)");   
+    }
+
+    m_ui->certGuidanceLabel->setText(guidanceText);
+    if (now > m_certExpiryDate) {
+        m_ui->certGuidanceLabel->setStyleSheet(
+            QStringLiteral("color: #dc2626;"));
+    } else {
+        m_ui->certGuidanceLabel->setStyleSheet(QString());
+    }
+    m_ui->certStatusLabel->setText(statusText);
+    m_ui->certStatusLabel->setStyleSheet(
+        QStringLiteral("background-color: %1; color: %2; border: 1px solid %2; border-radius: 10px; padding: 0 10px;")
+            .arg(bgColor, statusColor));
+
+    m_ui->certValidityProgress->setStyleSheet(
+        QStringLiteral("QProgressBar { border: none; border-radius: 3px; background-color: rgba(128,128,128,0.15); } "
+                       "QProgressBar::chunk { border-radius: 3px; background-color: %1; }").arg(statusColor));
+
     const qint64 totalSecs = m_certEffectiveDate.secsTo(m_certExpiryDate);
     if (totalSecs <= 0) {
         m_ui->certValidityProgress->setValue(100);
@@ -99,7 +144,6 @@ void CertificateBoxWidget::updateValidityDisplay(const QDateTime &now)
         return;
     }
 
-    // Calculate elapsed seconds since effective date
     qint64 elapsedSecs = m_certEffectiveDate.secsTo(now);
     if (elapsedSecs < 0) {
         elapsedSecs = 0;
@@ -113,7 +157,6 @@ void CertificateBoxWidget::updateValidityDisplay(const QDateTime &now)
     }
     m_ui->certValidityProgress->setValue(progressPercent);
 
-    // Calculate time remaining from now until expiry
     if (now >= m_certExpiryDate) {
         m_ui->certTimeRemainingLabel->setText(QStringLiteral("Expired"));
     } else {
