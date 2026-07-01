@@ -7,6 +7,7 @@ class QWidget;
 class QSystemTrayIcon;
 class QMenu;
 class QAction;
+class QLocalServer;
 
 class SystemTrayManager : public QObject
 {
@@ -15,6 +16,8 @@ class SystemTrayManager : public QObject
 public:
     explicit SystemTrayManager(QWidget *mainWindow, QObject *parent = nullptr);
     ~SystemTrayManager() override;
+
+    static bool ensureSingleInstance();
 
     void setup();
     void setShowHideActionText(const QString &text);
@@ -30,6 +33,7 @@ private:
     QSystemTrayIcon *m_trayIcon = nullptr;
     QMenu *m_trayMenu = nullptr;
     QAction *m_showHideAction = nullptr;
+    QLocalServer *m_localServer = nullptr;
     bool m_quitting = false;
 };
 
