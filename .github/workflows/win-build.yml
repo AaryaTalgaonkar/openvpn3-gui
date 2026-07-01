@@ -104,12 +104,36 @@ jobs:
         run: |
           & "$env:QT_HOST_PATH\bin\windeployqt.exe" `
             --qtpaths "$env:QT_ROOT_DIR\bin\qtpaths.bat" `
+            --no-translations `
+            --no-opengl-sw `
+            --no-system-d3d-compiler `
             ${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe
 
       - name: Deploy (Windows amd64 and Win32)
         if: matrix.cmake_arch == 'x64' || matrix.cmake_arch == 'Win32'
         run: |
-          windeployqt "${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe"
+          windeployqt --no-translations --no-opengl-sw --no-system-d3d-compiler "${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe"
+
+      - name: Clean up unnecessary files
+        shell: pwsh
+        run: |
+          $releaseDir = "${{ steps.strings.outputs.build-output-dir }}\Release"
+          # Remove large unnecessary files
+          $remove = @(
+            "$releaseDir\vc_redist.x64.exe",
+            "$releaseDir\opengl32sw.dll",
+            "$releaseDir\dxcompiler.dll",
+            "$releaseDir\dxil.dll",
+            "$releaseDir\d3dcompiler_47.dll",
+            "$releaseDir\d3dcompiler_43.dll",
+            "$releaseDir\generic\qtuiotouchplugin.dll"
+          )
+          foreach ($file in $remove) {
+            if (Test-Path $file) { Remove-Item $file -Force; Write-Host "Removed: $file" }
+          }
+          # Remove unnecessary image format plugins (keep only jpeg, png, svg, ico)
+          $imgFormats = Get-ChildItem "$releaseDir\imageformats\*.dll" | Where-Object { $_.Name -match 'q(gif|wbmp|tiff|webp|bmp)' }
+          foreach ($f in $imgFormats) { Remove-Item $f.FullName -Force; Write-Host "Removed: $($f.Name)" }
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
