@@ -39,6 +39,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
         src/mainwindow.cpp
+        src/thememanager.cpp
+        src/systemtraymanager.cpp
         src/connectionprogresswidget.cpp
         src/trafficgraphwidget.cpp
         src/certificateboxwidget.cpp
@@ -48,6 +50,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/generateprogresswidget.cpp
         headers/winmacvpnbackend.h
         headers/mainwindow.h
+        headers/thememanager.h
+        headers/systemtraymanager.h
         headers/connectionprogresswidget.h
         headers/trafficgraphwidget.h
         headers/certificateboxwidget.h

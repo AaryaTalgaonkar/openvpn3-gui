@@ -7,8 +7,7 @@
 
 class QLabel;
 class QTimer;
-class QSystemTrayIcon;
-class QMenu;
+class SystemTrayManager;
 
 #include "ikeystore.h"
 #include "ivpnbackend.h"
@@ -56,22 +55,16 @@ private:
     QSettings settings;
 
     CertificateBoxWidget *certBox = nullptr;
+    std::unique_ptr<SystemTrayManager> trayManager;
 
     void setInitialFlow();
     void setConnectFlow();
     void loadSavedCertificateState();
-    void applyTheme(bool dark);
     void showConnectPage();
     void showConnectingPage();
     bool promptForVpnPasswordAndConnect(const QString &message = QString());
     void updateCertificateInfoBox();
     void showConnectionLogs();
     bool darkTheme = false;
-    QSystemTrayIcon *trayIcon = nullptr;
-    QMenu *trayMenu = nullptr;
-    QAction *trayShowHideAction = nullptr;
-    bool quitting = false;
     void closeEvent(QCloseEvent *event) override;
-    void setupSystemTray();
-    void toggleMainWindowVisibility();
 };

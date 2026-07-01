@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+#include "thememanager.h"
+#include "systemtraymanager.h"
 
 #include <QDir>
 #include <QFile>
@@ -29,8 +31,6 @@
 #include <QSslCertificate>
 #include <QSslConfiguration>
 #include <QNetworkAccessManager>
-#include <QSystemTrayIcon>
-#include <QMenu>
 
 #ifdef Q_OS_LINUX
 #include "linuxvpnbackend.h"
@@ -214,7 +214,7 @@ MainWindow::MainWindow(QWidget *parent)
     disconnectUi.downloadSpeedValue->setText(QStringLiteral("--"));
 
     darkTheme = settings.value("theme/dark", false).toBool();
-    applyTheme(darkTheme);
+    ThemeManager::applyTheme(darkTheme, ui->themeToggleButton);
 
     connectUi.connectButton->setCheckable(false);
     connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
@@ -317,7 +317,29 @@ MainWindow::MainWindow(QWidget *parent)
         ui->rootStack->setCurrentWidget(ui->getStartedPage);
     }
 
-    setupSystemTray();
+    // Set up system tray manager
+    trayManager = std::make_unique<SystemTrayManager>(this, this);
+    connect(trayManager.get(), &SystemTrayManager::showHideRequested,
+            this, [this]() {
+                if (isVisible()) {
+                    hide();
+                    trayManager->setShowHideActionText(QStringLiteral("Show"));
+                } else {
+                    show();
+                    raise();
+                    activateWindow();
+                    trayManager->setShowHideActionText(QStringLiteral("Hide"));
+                }
+            });
+    connect(trayManager.get(), &SystemTrayManager::quitRequested,
+            this, [this]() {
+                trayManager->setQuitting(true);
+                if (backend->connectionState() == VpnConnectionState::Connected) {
+                    backend->disconnectVpn();
+                }
+                QApplication::quit();
+            });
+    trayManager->setup();
 }
 
 void MainWindow::handleGetStartedClicked()
@@ -360,40 +382,6 @@ void MainWindow::setConnectFlow()
 void MainWindow::loadSavedCertificateState()
 {
     certificateService.loadSavedCertificateState();
-}
-
-void MainWindow::applyTheme(bool dark)
-{
-    const QString accent = "#c21717";
-    if (dark) {
-        qApp->setStyleSheet(QStringLiteral(R"(
-            QMainWindow, QFrame, QLabel, QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QPushButton, QStatusBar, QDialog, QMessageBox { background-color: #0e0f10; color: #e6e6e6; }
-            QLabel { color: #e6e6e6; }
-            QLineEdit, QPlainTextEdit, QTextEdit, QComboBox { background-color: #1e1e1e; color: #e6e6e6; border: 1px solid #2b2b2b; border-radius: 4px; padding: 4px; }
-            QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus { border: 1px solid %1; }
-            QPushButton { background-color: #1b1b1b; color: #e6e6e6; border: 1px solid #2f2f2f; border-radius: 6px; padding: 6px 10px; }
-            QPushButton:hover { background-color: rgba(194,23,23,0.10); }
-            QPushButton:pressed { background-color: rgba(194,23,23,0.18); }
-            QStatusBar { background: transparent; color: #bdbdbd; }
-            QDialog, QMessageBox { background-color: #121212; color: #e6e6e6; }
-            QMessageBox QPushButton { background-color: #2b2b2b; color: #e6e6e6; border: 1px solid #363636; border-radius: 6px; padding: 4px 8px; }
-        )").arg(accent));
-        ui->themeToggleButton->setText("☀");
-    } else {
-        qApp->setStyleSheet(QStringLiteral(R"(
-            QMainWindow, QFrame, QLabel, QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QPushButton, QStatusBar, QDialog, QMessageBox { background-color: #ffffff; color: #1f1f1f; }
-            QLabel { color: #1f1f1f; }
-            QLineEdit, QPlainTextEdit, QTextEdit, QComboBox { background-color: #ffffff; color: #1f1f1f; border: 1px solid #dedede; border-radius: 4px; padding: 4px; }
-            QLineEdit:focus, QPlainTextEdit:focus, QTextEdit:focus, QComboBox:focus { border: 1px solid %1; }
-            QPushButton { background-color: #f5f5f5; color: #1f1f1f; border: 1px solid #e6e6e6; border-radius: 6px; padding: 6px 10px; }
-            QPushButton:hover { background-color: rgba(194,23,23,0.08); }
-            QStatusBar { background: transparent; color: #666666; }
-            QDialog, QMessageBox { background-color: #ffffff; color: #1f1f1f; }
-            QMessageBox QPushButton { background-color: #ffffff; color: #1f1f1f; border: 1px solid #cccccc; border-radius: 6px; padding: 4px 8px; }
-        )").arg(accent));
-        ui->themeToggleButton->setText("☾");
-
-    }
 }
 
 void MainWindow::showConnectPage()
@@ -510,7 +498,7 @@ void MainWindow::on_themeToggleButton_clicked()
     darkTheme = !darkTheme;
     settings.setValue("theme/dark", darkTheme);
     settings.sync();
-    applyTheme(darkTheme);
+    ThemeManager::applyTheme(darkTheme, ui->themeToggleButton);
 }
 
 void MainWindow::on_logsButton_clicked()
@@ -677,62 +665,9 @@ void MainWindow::showConnectionLogs()
 }
 
 
-void MainWindow::setupSystemTray()
-{
-    if (!QSystemTrayIcon::isSystemTrayAvailable()) {
-        return;
-    }
-
-    trayIcon = new QSystemTrayIcon(QIcon(":/img/logo.png"), this);
-    trayIcon->setToolTip(QStringLiteral("IITDelhiVPN"));
-
-    trayMenu = new QMenu(this);
-
-    trayShowHideAction = trayMenu->addAction(QStringLiteral("Hide"));
-    connect(trayShowHideAction, &QAction::triggered, this, &MainWindow::toggleMainWindowVisibility);
-
-    trayMenu->addSeparator();
-
-    QAction *quitAction = trayMenu->addAction(QStringLiteral("Quit"));
-    connect(quitAction, &QAction::triggered, this, [this]() {
-        quitting = true;
-        if (backend->connectionState() == VpnConnectionState::Connected) {
-            backend->disconnectVpn();
-        }
-        QApplication::quit();
-    });
-
-    trayIcon->setContextMenu(trayMenu);
-
-    connect(trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::DoubleClick) {
-            toggleMainWindowVisibility();
-        }
-    });
-
-    trayIcon->show();
-}
-
-void MainWindow::toggleMainWindowVisibility()
-{
-    if (isVisible()) {
-        hide();
-        if (trayShowHideAction) {
-            trayShowHideAction->setText(QStringLiteral("Show"));
-        }
-    } else {
-        show();
-        raise();
-        activateWindow();
-        if (trayShowHideAction) {
-            trayShowHideAction->setText(QStringLiteral("Hide"));
-        }
-    }
-}
-
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (quitting) {
+    if (trayManager && trayManager->isQuitting()) {
         if (backend->connectionState() == VpnConnectionState::Connected) {
             backend->disconnectVpn();
         }
@@ -741,8 +676,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 
     hide();
-    if (trayShowHideAction) {
-        trayShowHideAction->setText(QStringLiteral("Show"));
+    if (trayManager) {
+        trayManager->setShowHideActionText(QStringLiteral("Show"));
     }
     event->ignore();
 }
