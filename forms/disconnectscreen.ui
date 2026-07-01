@@ -1,0 +1,599 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DisconnectScreen</class>
+ <widget class="QWidget" name="DisconnectScreen">
+  <property name="font">
+   <font>
+    <family>Titillium Web</family>
+    <pointsize>7</pointsize>
+   </font>
+  </property>
+  <layout class="QVBoxLayout" name="disconnectRootLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
+    <item>
+     <spacer name="disconnectPageTopSpacer">
+      <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+      </property>
+     </spacer>
+    </item>
+    <item>
+     <widget class="QWidget" name="disconnectPage">
+      <layout class="QVBoxLayout" name="disconnectPageLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <spacer name="disconnectPageTopSpacerInner">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="disconnectButtonRow">
+         <item>
+          <spacer name="disconnectButtonLeftSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="disconnectButton">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horStretch>0</horStretch>
+             <verStretch>0</verStretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>76</width>
+             <height>76</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>76</width>
+             <height>76</height>
+            </size>
+           </property>
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="font">
+            <font>
+             <family>Segoe UI Emoji</family>
+             <pointsize>24</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QPushButton {  border-radius: 38px; min-width: 76px; min-height: 76px; padding: 0px; margin: 0px; }</string>
+           </property>
+           <property name="text">
+            <string>⏻</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="disconnectButtonRightSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="connectionStatusTitle">
+         <property name="font">
+          <font>
+           <family>Titillium Web</family>
+           <pointsize>14</pointsize>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>You are connected</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="connectionStatusSubtitle">
+         <property name="font">
+          <font>
+           <family>Titillium Web</family>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Connected to IIT Delhi internal resources.</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="connectedTrafficFrame">
+         <property name="visible">
+          <bool>true</bool>
+         </property>
+         <layout class="QVBoxLayout" name="connectedTrafficLayout">
+          <property name="leftMargin">
+           <number>12</number>
+          </property>
+          <property name="topMargin">
+           <number>12</number>
+          </property>
+          <property name="rightMargin">
+           <number>12</number>
+          </property>
+          <property name="bottomMargin">
+           <number>12</number>
+          </property>
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QFrame" name="connectionDetailsFrame">
+            <property name="styleSheet">
+             <string notr="true">QFrame#connectionDetailsFrame { border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 8px; }</string>
+            </property>
+            <layout class="QVBoxLayout" name="connectionDetailsLayout">
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
+             <item>
+              <widget class="QWidget" name="connectionInfoHost">
+               <layout class="QVBoxLayout" name="connectionInfoHostLayout">
+                <item>
+                 <widget class="QWidget" name="clientLineHost">
+                  <layout class="QHBoxLayout" name="clientLineLayout">
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="clientNameLabel">
+                     <property name="font">
+                      <font>
+                       <family>Titillium Web</family>
+                       <pointsize>10</pointsize>
+                       <bold>true</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>—</string>
+                     </property>
+                    </widget>
+                   </item>
+                  <item>
+                   <widget class="QWidget" name="clientDetailsHost">
+                    <layout class="QHBoxLayout" name="clientDetailsHostLayout">
+                     <property name="leftMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <spacer name="clientLeftSpacer">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QWidget" name="clientColumnsHost">
+                       <layout class="QHBoxLayout" name="clientColumnsLayout">
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QLabel" name="clientDetailsCol1Label">
+                          <property name="font">
+                           <font>
+                            <family>Titillium Web</family>
+                            <pointsize>9</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignLeft|Qt::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="clientDetailsCol2Label">
+                          <property name="font">
+                           <font>
+                            <family>Titillium Web</family>
+                            <pointsize>9</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignRight|Qt::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QFrame" name="connectionSectionSeparator">
+                  <property name="frameShape">
+                   <enum>QFrame::HLine</enum>
+                  </property>
+                  <property name="frameShadow">
+                   <enum>QFrame::Sunken</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QWidget" name="serverLineHost">
+                  <layout class="QHBoxLayout" name="serverLineLayout">
+                   <property name="leftMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>0</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>0</number>
+                   </property>
+                   <item>
+                    <widget class="QLabel" name="serverNameLabel">
+                     <property name="font">
+                      <font>
+                       <family>Titillium Web</family>
+                       <pointsize>10</pointsize>
+                       <bold>true</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string>—</string>
+                     </property>
+                    </widget>
+                   </item>
+                  <item>
+                   <widget class="QWidget" name="serverDetailsHost">
+                    <layout class="QHBoxLayout" name="serverDetailsHostLayout">
+                     <property name="leftMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <spacer name="serverLeftSpacer">
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QWidget" name="serverColumnsHost">
+                       <layout class="QHBoxLayout" name="serverColumnsLayout">
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QLabel" name="serverDetailsCol1Label">
+                          <property name="font">
+                           <font>
+                            <family>Titillium Web</family>
+                            <pointsize>9</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignLeft|Qt::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="serverDetailsCol2Label">
+                          <property name="font">
+                           <font>
+                            <family>Titillium Web</family>
+                            <pointsize>9</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignHCenter|Qt::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="serverDetailsCol3Label">
+                          <property name="font">
+                           <font>
+                            <family>Titillium Web</family>
+                            <pointsize>9</pointsize>
+                           </font>
+                          </property>
+                          <property name="text">
+                           <string>—</string>
+                          </property>
+                          <property name="alignment">
+                           <set>Qt::AlignRight|Qt::AlignVCenter</set>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  </layout>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QFrame" name="graphFrame">
+            <property name="styleSheet">
+             <string notr="true">QFrame#graphFrame { border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; }</string>
+            </property>
+            <layout class="QVBoxLayout" name="graphFrameLayout">
+             <property name="leftMargin">
+              <number>12</number>
+             </property>
+             <property name="topMargin">
+              <number>12</number>
+             </property>
+             <property name="rightMargin">
+              <number>12</number>
+             </property>
+             <property name="bottomMargin">
+              <number>12</number>
+             </property>
+             <item>
+              <layout class="QHBoxLayout" name="trafficStatsLayout">
+               <property name="spacing">
+                <number>12</number>
+               </property>
+               <item>
+                <widget class="QFrame" name="uploadStatCard">
+                 <property name="styleSheet">
+                  <string notr="true">QFrame#uploadStatCard { background-color: rgba(194,23,23,0.06); border-radius: 10px; }</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="uploadStatLayout">
+                  <property name="leftMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                   <item>
+                    <widget class="QLabel" name="uploadSpeedValue">
+                    <property name="font">
+                     <font>
+                      <family>Titillium Web</family>
+                      <pointsize>18</pointsize>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>--</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QFrame" name="downloadStatCard">
+                 <property name="styleSheet">
+                  <string notr="true">QFrame#downloadStatCard { background-color: rgba(30,136,229,0.06); border-radius: 10px; }</string>
+                 </property>
+                 <layout class="QVBoxLayout" name="downloadStatLayout">
+                  <property name="leftMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>10</number>
+                  </property>
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                   <item>
+                    <widget class="QLabel" name="downloadSpeedValue">
+                    <property name="font">
+                     <font>
+                      <family>Titillium Web</family>
+                      <pointsize>18</pointsize>
+                      <bold>true</bold>
+                     </font>
+                    </property>
+                    <property name="text">
+                     <string>--</string>
+                    </property>
+                    <property name="alignment">
+                     <set>Qt::AlignmentFlag::AlignCenter</set>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="disconnectPageBottomSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="disconnectPageBottomSpacerOuter">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>40</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

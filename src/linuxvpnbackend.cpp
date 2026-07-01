@@ -1,6 +1,15 @@
 #include "linuxvpnbackend.h"
 #include <QDebug>
 
+const ConnectionStepDefinition LinuxVpnBackend::s_connectionSteps[] = {
+    {"SESSION_START", "🔗", "Starting VPN session"},
+    {"AUTH", "🔑", "Authenticating"},
+    {"CONNECTING", "↻", "Connecting"},
+    {"CONNECTED", "✓", "Connected"},
+};
+
+const int LinuxVpnBackend::s_connectionStepCount = sizeof(s_connectionSteps) / sizeof(s_connectionSteps[0]);
+
 LinuxVpnBackend::LinuxVpnBackend(QObject *parent)
     : IVpnBackend(parent)
 {
@@ -9,55 +18,63 @@ LinuxVpnBackend::LinuxVpnBackend(QObject *parent)
 
 }
 
-bool LinuxVpnBackend::isConnected() const
+VpnConnectionState LinuxVpnBackend::connectionState() const
 {
     return connectedState;
 }
 
+void LinuxVpnBackend::setCurrentConnectionStep(int stepIndex)
+{
+    if (m_currentConnectionStep != stepIndex) {
+        m_currentConnectionStep = stepIndex;
+        emit connectionStepChanged(stepIndex);
+    }
+}
+
+void LinuxVpnBackend::updatePassword(const QString &password)
+{
+    Q_UNUSED(password);
+}
+
 void LinuxVpnBackend::connectVpn(const QString &ovpnPath,
-                                 const QString &username,
                                  const QString &password)
 {
     if (logProcess.state() != QProcess::NotRunning)
         return;
 
     configPath = ovpnPath;
-    emit statusChanged("Connecting...");
+    connectedState = VpnConnectionState::Connecting;
+    emit connectionStateChanged(connectedState);
 
-    // 1️⃣ Start log watcher FIRST
-    logProcess.start("openvpn3", {
+    logProcess.start("iitdvpn", {
                                      "log",
-                                     "--config", ovpnPath,
-                                     "--log-level", "0"
+                                     "--config", ovpnPath
                                  });
 
-    // 2️⃣ Start session
-    sessionStart.start("openvpn3", {
+    sessionStart.start("iitdvpn", {
                                        "session-start",
                                        "--config", ovpnPath
                                    });
 
-    // 3️⃣ Provide credentials
-    sessionStart.write(QString("%1\n").arg(username).toUtf8());
     sessionStart.write(QString("%1\n").arg(password).toUtf8());
 }
 
 void LinuxVpnBackend::disconnectVpn()
 {
-    if (!connectedState)
+    if (connectedState != VpnConnectionState::Connected)
         return;
 
-    emit statusChanged("Disconnecting...");
-
-    QProcess::execute("openvpn3", {
+    QProcess::execute("iitdvpn", {
                                       "session-manage",
                                       "--config", configPath,
                                       "--disconnect"
                                   });
 
-    connectedState = false;
+    connectedState = VpnConnectionState::Disconnected;
+    m_currentConnectionStep = -1;
+    emit connectionStepChanged(-1);
     emit disconnected();
-    emit statusChanged("Connect");
+    emit connectionStateChanged(connectedState);
 
     logProcess.terminate();
 }
@@ -72,21 +89,36 @@ void LinuxVpnBackend::onLogOutput()
         if (!line.contains("[STATUS]"))
             continue;
 
-        if (line.contains("Client connected")) {
-            connectedState = true;
+        // Map known status patterns to step indices
+        if (line.contains("Session state: CONNECTING") || line.contains("Connecting to")) {
+            setCurrentConnectionStep(0); // SESSION_START
+        }
+        else if (line.contains("Authenticating") || line.contains("Authentication")) {
+            setCurrentConnectionStep(1); // AUTH
+        }
+        else if (line.contains("client connecting") || line.contains("Establishing")) {
+            setCurrentConnectionStep(2); // CONNECTING
+        }
+        else if (line.contains("Client connected")) {
+            setCurrentConnectionStep(3); // CONNECTED (just before full connection)
+            connectedState = VpnConnectionState::Connected;
             emit connected();
-            emit statusChanged("Disconnect");
+            emit connectionStateChanged(connectedState);
         }
         else if (line.contains("Authentication failed")) {
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Incorrect username/password");
         }
         else if (line.contains("parse_cert_crl_error")) {
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Error parsing CA certificate. The CA certificate may be corrupted or invalid.");
         }
         else if(line.contains("parse_pem")){
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Invalid certificate. Please check the certificate format.");
         }
         else if(line.contains("Certificate verification failed")){
+            setCurrentConnectionStep(-1);
             emit errorOccurred("Certificate verification failed. Probably your certificate has expired.");
         }
     }

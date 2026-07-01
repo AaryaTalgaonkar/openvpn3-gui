@@ -12,43 +12,35 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS
     ${CMAKE_CURRENT_SOURCE_DIR}/forms
 )
 
+# Compress Qt resources (rcc) to reduce binary size
+set(CMAKE_AUTORCC_OPTIONS "--compress;2")
+
+# Release build optimizations
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_CONFIGURATION_TYPES MATCHES "Release")
+    if(MSVC)
+        # Enable link-time code generation (LTCG) for smaller binary
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL /Gw /Gy")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /INCREMENTAL:NO")
+    endif()
+endif()
+
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent)
 
-set(PROJECT_SOURCES
-
-
-
-
-)
+# Collect source files from standard directories
+file(GLOB SOURCES src/*.cpp)
+file(GLOB HEADERS headers/*.h)
+file(GLOB FORMS forms/*.ui)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(IITDelhiVPN
         MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-
-
-
-
-
-
-        src/main.cpp  src/openvpnmgmt.cpp src/vpncontroller.cpp
-
-
-        src/mainwindow.cpp
-        headers/openvpnmgmt.h headers/winmacvpnbackend.h
-        headers/mainwindow.h
+        ${SOURCES}
+        ${HEADERS}
+        ${FORMS}
         resources/resources.qrc
-        forms/mainwindow.ui
-        headers/linuxvpnbackend.h
-        src/linuxvpnbackend.cpp
-        headers/ivpnbackend.h
-        headers/vpncontroller.h
-        src/winmacvpnbackend.cpp
-
-
     )
 
 set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/deploy/iitdelhivpn.icns)
@@ -72,13 +64,13 @@ target_include_directories(IITDelhiVPN
 else()
     if(ANDROID)
         add_library(IITDelhiVPN SHARED
-            ${PROJECT_SOURCES}
+            ${SOURCES}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(IITDelhiVPN
-            ${PROJECT_SOURCES}
+            ${SOURCES}
         )
     endif()
 endif()
@@ -87,7 +79,11 @@ endif()
 
 
 
-target_link_libraries(IITDelhiVPN PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(IITDelhiVPN PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network Qt${QT_VERSION_MAJOR}::Concurrent)
+
+if(WIN32)
+    target_link_libraries(IITDelhiVPN PRIVATE Crypt32)
+endif()
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
