@@ -42,12 +42,24 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         src/connectionprogresswidget.cpp
         src/trafficgraphwidget.cpp
         src/certificateboxwidget.cpp
+        src/validitytimelinewidget.cpp
+        src/userinfowidget.cpp
+        src/statuswidget.cpp
+        src/generateprogresswidget.cpp
         headers/winmacvpnbackend.h
         headers/mainwindow.h
         headers/connectionprogresswidget.h
         headers/trafficgraphwidget.h
         headers/certificateboxwidget.h
+        headers/validitytimelinewidget.h
+        headers/userinfowidget.h
+        headers/statuswidget.h
+        headers/generateprogresswidget.h
         forms/certificatebox.ui
+        forms/validitytimeline.ui
+        forms/userinfo.ui
+        forms/statuswidget.ui
+        forms/generateprogress.ui
         headers/certificatedownloadservice.h
         resources/resources.qrc
         forms/mainwindow.ui

@@ -112,13 +112,8 @@
             <property name="styleSheet">
              <string notr="true">QPushButton#logsButton {
         border-radius: 16px;
-        background-color: rgba(194,23,23,0.5);
-        border: none;
-        color: #1f1f1f;
+        border: 1px solid #e6e6e6;
         font-size: 16px;
-    }
-    QPushButton#logsButton:hover {
-        background-color: rgba(194,23,23,0.8);
     }</string>
             </property>
             <property name="text">
@@ -149,13 +144,8 @@
             <property name="styleSheet">
              <string notr="true">QPushButton#themeToggleButton {
         border-radius: 16px;
-        background-color: rgba(194,23,23,0.5);
-        border: none;
-        color: #1f1f1f;
+        border: 1px solid #e6e6e6;
         font-size: 16px;
-    }
-    QPushButton#themeToggleButton:hover {
-        background-color: rgba(194,23,23,0.8);
     }</string>
             </property>
             <property name="text">

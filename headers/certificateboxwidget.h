@@ -6,9 +6,13 @@
 #include <QSslCertificate>
 
 class QLabel;
-class QProgressBar;
 class QPushButton;
 class QStackedWidget;
+
+class UserInfoWidget;
+class StatusWidget;
+class ValidityTimelineWidget;
+class GenerateProgressWidget;
 
 #include "ui_certificatebox.h"
 
@@ -42,8 +46,19 @@ signals:
     /// Emitted after successfully parsing an OVPN certificate.
     void certificateParsed();
 
+private slots:
+    void onRenewClicked();
+
 private:
     Ui::CertificateBox *m_ui;
+
+    // Sub-widgets (promoted in .ui, but we also store typed pointers for convenience)
+    UserInfoWidget *m_userInfo;
+    StatusWidget *m_noCertStatus;
+    StatusWidget *m_certStatus;
+    ValidityTimelineWidget *m_validityTimeline;
+    GenerateProgressWidget *m_generateProgress;
+
     QDateTime m_certEffectiveDate;
     QDateTime m_certExpiryDate;
 };
