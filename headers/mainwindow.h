@@ -64,7 +64,6 @@ private:
     void showConnectingPage();
     bool promptForVpnPasswordAndConnect(const QString &message = QString());
     void updateCertificateInfoBox();
-    void showConnectionLogs();
     bool darkTheme = false;
     void closeEvent(QCloseEvent *event) override;
 };

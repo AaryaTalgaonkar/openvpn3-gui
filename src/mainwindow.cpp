@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "thememanager.h"
 #include "systemtraymanager.h"
+#include "connectionlogsdialog.h"
 
 #include <QDir>
 #include <QFile>
@@ -503,7 +504,8 @@ void MainWindow::on_themeToggleButton_clicked()
 
 void MainWindow::on_logsButton_clicked()
 {
-    showConnectionLogs();
+    ConnectionLogsDialog dialog(recentConnectionLogs, this);
+    dialog.exec();
 }
 
 void MainWindow::handleVpnConnectionInfoChanged(const QString &remote, const QString &remoteAddr, const QString &proto, const QString &localIface, const QString &localIp, const QString &gateway, int mtu)
@@ -594,76 +596,6 @@ bool MainWindow::promptForVpnPasswordAndConnect(const QString &message)
     backend->connectVpn(certificateService.downloadedOvpnPath(), password);
     return true;
 }
-
-void MainWindow::showConnectionLogs()
-{
-    QDialog dialog(this);
-    dialog.setWindowTitle(QStringLiteral("Connection Logs"));
-    dialog.setModal(true);
-    dialog.setFixedSize(300, 400);
-
-    auto *layout = new QVBoxLayout(&dialog);
-    layout->setContentsMargins(16, 16, 16, 16);
-    layout->setSpacing(12);
-
-    auto *viewer = new QPlainTextEdit(&dialog);
-    viewer->setReadOnly(true);
-    viewer->setPlaceholderText(QStringLiteral("Logs from the most recent VPN socket connection will appear here."));
-    viewer->setPlainText(recentConnectionLogs.join(QStringLiteral("\n\n")));
-    QFont logFont;
-    logFont.setFamily(QStringLiteral("Courier New"));
-    logFont.setPointSize(10);
-    viewer->setFont(logFont);
-    // Wrap long lines to the widget width to avoid horizontal scrolling
-    viewer->setLineWrapMode(QPlainTextEdit::WidgetWidth);
-    viewer->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    // Modern thin scrollbar styling for the log viewer
-    const QString logScrollStyle = QStringLiteral(
-        "QPlainTextEdit { font-family: 'Courier New'; font-size: 10px; }"
-        "QScrollBar:vertical { background: transparent; width: 10px; margin: 0px 0px 0px 0px; }"
-        "QScrollBar::handle:vertical { background: rgba(0,0,0,0.25); min-height: 20px; border-radius: 5px; }"
-        "QScrollBar::add-line, QScrollBar::sub-line { height: 0px; }"
-        "QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }"
-    );
-    viewer->setStyleSheet(logScrollStyle);
-    layout->addWidget(viewer, 1);
-
-    auto *buttonRow = new QHBoxLayout();
-    buttonRow->setSpacing(8);
-
-    auto *saveButton = new QPushButton(QStringLiteral("Save Logs"), &dialog);
-    auto *closeButton = new QPushButton(QStringLiteral("Close"), &dialog);
-    saveButton->setCursor(Qt::PointingHandCursor);
-    closeButton->setCursor(Qt::PointingHandCursor);
-    buttonRow->addWidget(saveButton);
-    buttonRow->addStretch(1);
-    buttonRow->addWidget(closeButton);
-    layout->addLayout(buttonRow);
-
-    connect(saveButton, &QPushButton::clicked, &dialog, [this, viewer, &dialog]() {
-        const QString defaultName = QStringLiteral("vpn-logs-%1.txt")
-            .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss")));
-        const QString initialPath = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).filePath(defaultName);
-        const QString filePath = QFileDialog::getSaveFileName(&dialog, QStringLiteral("Save Logs"), initialPath, QStringLiteral("Text Files (*.txt);;All Files (*)"));
-        if (filePath.isEmpty()) {
-            return;
-        }
-
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QMessageBox::critical(&dialog, QStringLiteral("Save Failed"), QStringLiteral("Could not write the selected file."));
-            return;
-        }
-
-        file.write(viewer->toPlainText().toUtf8());
-    });
-
-    connect(closeButton, &QPushButton::clicked, &dialog, &QDialog::accept);
-
-    dialog.exec();
-}
-
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {

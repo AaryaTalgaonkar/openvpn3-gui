@@ -17,73 +17,18 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network Concurrent)
 
-set(PROJECT_SOURCES
-
-
-
-
-)
+# Collect source files from standard directories
+file(GLOB SOURCES src/*.cpp)
+file(GLOB HEADERS headers/*.h)
+file(GLOB FORMS forms/*.ui)
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(IITDelhiVPN
         MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-
-
-
-
-
-
-        src/main.cpp
-        src/certificatedownloadservice.cpp
-
-
-        src/mainwindow.cpp
-        src/thememanager.cpp
-        src/systemtraymanager.cpp
-        src/connectionprogresswidget.cpp
-        src/trafficgraphwidget.cpp
-        src/certificateboxwidget.cpp
-        src/validitytimelinewidget.cpp
-        src/userinfowidget.cpp
-        src/statuswidget.cpp
-        src/generateprogresswidget.cpp
-        headers/winmacvpnbackend.h
-        headers/mainwindow.h
-        headers/thememanager.h
-        headers/systemtraymanager.h
-        headers/connectionprogresswidget.h
-        headers/trafficgraphwidget.h
-        headers/certificateboxwidget.h
-        headers/validitytimelinewidget.h
-        headers/userinfowidget.h
-        headers/statuswidget.h
-        headers/generateprogresswidget.h
-        forms/certificatebox.ui
-        forms/validitytimeline.ui
-        forms/userinfo.ui
-        forms/statuswidget.ui
-        forms/generateprogress.ui
-        headers/certificatedownloadservice.h
+        ${SOURCES}
+        ${HEADERS}
+        ${FORMS}
         resources/resources.qrc
-        forms/mainwindow.ui
-        forms/connectscreen.ui
-        forms/connectingscreen.ui
-        forms/disconnectscreen.ui
-        forms/getstarted.ui
-        headers/linuxvpnbackend.h
-        src/linuxvpnbackend.cpp
-        headers/ivpnbackend.h
-        src/winmacvpnbackend.cpp
-        headers/ikeystore.h
-        headers/windowskeystore.h
-        src/windowskeystore.cpp
-        headers/linuxkeystore.h
-        src/linuxkeystore.cpp
-        headers/mackeystore.h
-        src/mackeystore.cpp
-
-
     )
 
 set(APP_ICON ${CMAKE_CURRENT_SOURCE_DIR}/deploy/iitdelhivpn.icns)
@@ -107,13 +52,13 @@ target_include_directories(IITDelhiVPN
 else()
     if(ANDROID)
         add_library(IITDelhiVPN SHARED
-            ${PROJECT_SOURCES}
+            ${SOURCES}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(IITDelhiVPN
-            ${PROJECT_SOURCES}
+            ${SOURCES}
         )
     endif()
 endif()
