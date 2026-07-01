@@ -7,6 +7,8 @@
 
 class QLabel;
 class QTimer;
+class QSystemTrayIcon;
+class QMenu;
 
 #include "ikeystore.h"
 #include "ivpnbackend.h"
@@ -65,5 +67,11 @@ private:
     void updateCertificateInfoBox();
     void showConnectionLogs();
     bool darkTheme = false;
+    QSystemTrayIcon *trayIcon = nullptr;
+    QMenu *trayMenu = nullptr;
+    QAction *trayShowHideAction = nullptr;
+    bool quitting = false;
     void closeEvent(QCloseEvent *event) override;
+    void setupSystemTray();
+    void toggleMainWindowVisibility();
 };
