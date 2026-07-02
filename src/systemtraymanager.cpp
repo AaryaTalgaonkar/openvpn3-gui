@@ -18,6 +18,10 @@ SystemTrayManager::SystemTrayManager(QWidget *mainWindow, QObject *parent)
     : QObject(parent)
     , m_mainWindow(mainWindow)
 {
+    // Install event filter to intercept close events on the main window
+    if (m_mainWindow) {
+        m_mainWindow->installEventFilter(this);
+    }
 }
 
 SystemTrayManager::~SystemTrayManager()
@@ -78,6 +82,10 @@ void SystemTrayManager::setup()
                             m_mainWindow->show();
                             m_mainWindow->raise();
                             m_mainWindow->activateWindow();
+                            // Update tray menu text if showing
+                            if (m_showHideAction) {
+                                m_showHideAction->setText(QStringLiteral("Hide"));
+                            }
                         }
                     }
                     clientSocket->disconnectFromServer();
@@ -96,31 +104,29 @@ void SystemTrayManager::setup()
         m_trayMenu = new QMenu();
     }
 
+    // Show/Hide action — managed entirely by this class
     m_showHideAction = m_trayMenu->addAction(QStringLiteral("Hide"));
-    connect(m_showHideAction, &QAction::triggered, this, &SystemTrayManager::showHideRequested);
+    connect(m_showHideAction, &QAction::triggered, this, &SystemTrayManager::toggleVisibility);
 
     m_trayMenu->addSeparator();
 
     QAction *quitAction = m_trayMenu->addAction(QStringLiteral("Quit"));
-    connect(quitAction, &QAction::triggered, this, &SystemTrayManager::quitRequested);
+    connect(quitAction, &QAction::triggered, this, [this]() {
+        m_quitting = true;
+        emit quitRequested();
+        QApplication::quit();
+    });
 
     m_trayIcon->setContextMenu(m_trayMenu);
 
     connect(m_trayIcon, &QSystemTrayIcon::activated, this,
             [this](QSystemTrayIcon::ActivationReason reason) {
                 if (reason == QSystemTrayIcon::DoubleClick) {
-                    emit showHideRequested();
+                    toggleVisibility();
                 }
             });
 
     m_trayIcon->show();
-}
-
-void SystemTrayManager::setShowHideActionText(const QString &text)
-{
-    if (m_showHideAction) {
-        m_showHideAction->setText(text);
-    }
 }
 
 bool SystemTrayManager::isQuitting() const
@@ -128,7 +134,44 @@ bool SystemTrayManager::isQuitting() const
     return m_quitting;
 }
 
-void SystemTrayManager::setQuitting(bool quitting)
+bool SystemTrayManager::eventFilter(QObject *obj, QEvent *event)
 {
-    m_quitting = quitting;
+    // Intercept close events on the main window — hide to tray instead
+    if (obj == m_mainWindow && event->type() == QEvent::Close) {
+        auto *closeEvent = static_cast<QCloseEvent *>(event);
+        if (!m_quitting) {
+            // Hide instead of closing
+            toggleVisibility();
+            closeEvent->ignore();
+            return true;
+        }
+    }
+    return QObject::eventFilter(obj, event);
+}
+
+void SystemTrayManager::toggleVisibility()
+{
+    if (!m_mainWindow) {
+        return;
+    }
+
+    if (m_mainWindow->isVisible()) {
+        // Hide all modal dialogs as well (e.g. password prompt, error messages)
+        for (QWidget *widget : QApplication::topLevelWidgets()) {
+            if (widget != m_mainWindow && widget->isModal() && widget->isVisible()) {
+                widget->hide();
+            }
+        }
+        m_mainWindow->hide();
+        if (m_showHideAction) {
+            m_showHideAction->setText(QStringLiteral("Show"));
+        }
+    } else {
+        m_mainWindow->show();
+        m_mainWindow->raise();
+        m_mainWindow->activateWindow();
+        if (m_showHideAction) {
+            m_showHideAction->setText(QStringLiteral("Hide"));
+        }
+    }
 }

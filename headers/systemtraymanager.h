@@ -8,6 +8,7 @@ class QSystemTrayIcon;
 class QMenu;
 class QAction;
 class QLocalServer;
+class QEvent;
 
 class SystemTrayManager : public QObject
 {
@@ -20,15 +21,17 @@ public:
     static bool ensureSingleInstance();
 
     void setup();
-    void setShowHideActionText(const QString &text);
     bool isQuitting() const;
-    void setQuitting(bool quitting);
 
 signals:
-    void showHideRequested();
     void quitRequested();
 
+protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+
 private:
+    void toggleVisibility();
+
     QWidget *m_mainWindow;
     QSystemTrayIcon *m_trayIcon = nullptr;
     QMenu *m_trayMenu = nullptr;

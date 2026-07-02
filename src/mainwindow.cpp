@@ -320,25 +320,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set up system tray manager
     trayManager = std::make_unique<SystemTrayManager>(this, this);
-    connect(trayManager.get(), &SystemTrayManager::showHideRequested,
-            this, [this]() {
-                if (isVisible()) {
-                    hide();
-                    trayManager->setShowHideActionText(QStringLiteral("Show"));
-                } else {
-                    show();
-                    raise();
-                    activateWindow();
-                    trayManager->setShowHideActionText(QStringLiteral("Hide"));
-                }
-            });
     connect(trayManager.get(), &SystemTrayManager::quitRequested,
             this, [this]() {
-                trayManager->setQuitting(true);
                 if (backend->connectionState() == VpnConnectionState::Connected) {
                     backend->disconnectVpn();
                 }
-                QApplication::quit();
             });
     trayManager->setup();
 }
@@ -607,9 +593,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         return;
     }
 
-    hide();
-    if (trayManager) {
-        trayManager->setShowHideActionText(QStringLiteral("Show"));
-    }
+    // The event filter in SystemTrayManager handles hiding to tray.
+    // If we reach here without quitting, just accept and let the event
+    // filter's ignore() take effect.
     event->ignore();
 }
