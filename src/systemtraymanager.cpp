@@ -27,9 +27,16 @@ SystemTrayManager::~SystemTrayManager()
 
 bool SystemTrayManager::ensureSingleInstance()
 {
+    // Use a static pointer so the QSharedMemory persists for the app's lifetime.
+    // If it were a local variable, it would go out of scope and release the
+    // shared memory segment, defeating the single-instance check.
+    static QSharedMemory *sharedMem = nullptr;
+    if (!sharedMem) {
+        sharedMem = new QSharedMemory(kSharedMemoryKey);
+    }
+
     // Try to attach to existing shared memory
-    QSharedMemory sharedMem(kSharedMemoryKey);
-    if (sharedMem.attach()) {
+    if (sharedMem->attach()) {
         // Another instance is already running — tell it to show itself
         QLocalSocket socket;
         socket.connectToServer(kLocalServerName);
@@ -42,7 +49,7 @@ bool SystemTrayManager::ensureSingleInstance()
     }
 
     // We are the first instance — create the shared memory
-    if (!sharedMem.create(1)) {
+    if (!sharedMem->create(1)) {
         return false;
     }
 
