@@ -50,7 +50,7 @@ private:
 
     QFutureWatcher<QByteArray> m_signWatcher;
 
-    QString resolveOpenVpnBinary() const;
+    QString resolveBinary() const;
     void handleMgmtLine(const QByteArray &line);
     void handleConnectedLog(const QString &payloadStr);
 

@@ -101,7 +101,7 @@ VpnConnectionState WinMacVpnBackend::connectionState() const
     return connectedState;
 }
 
-QString WinMacVpnBackend::resolveOpenVpnBinary() const
+QString WinMacVpnBackend::resolveBinary() const
 {
     QDir dir(QCoreApplication::applicationDirPath());
     dir.cdUp();
@@ -134,7 +134,7 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
         "--management-external-key"
     };
 
-    vpnProcess->start(resolveOpenVpnBinary(), args);
+    vpnProcess->start(resolveBinary(), args);
 
     connect(vpnProcess, &QProcess::readyReadStandardOutput, this,
             [this]() {
@@ -267,7 +267,6 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
                     connectedState = VpnConnectionState::Connecting;
                     emit connectionStateChanged(connectedState);
                 } else {
-                    // Map intermediate state strings (RESOLVE, WAIT, etc.) to step index
                     const int stepIdx = stateToStepIndex(stateStr);
                     if (stepIdx >= 0) {
                         setCurrentConnectionStep(stepIdx);
@@ -306,14 +305,11 @@ void WinMacVpnBackend::handleMgmtLine(const QByteArray &line)
             return;
         }
 
-        // If a previous signing operation is still in progress, ignore this request
-        // (OpenVPN will retry if needed)
         if (m_signWatcher.isRunning()) {
             qWarning() << "[WinMacVpnBackend] RSA_SIGN: previous signing still in progress, ignoring.";
             return;
         }
 
-        // Run signing on a thread pool to avoid blocking the main/event loop thread
         m_signWatcher.setFuture(QtConcurrent::run([this, rawData]() {
             return m_keyStore->signData(rawData);
         }));

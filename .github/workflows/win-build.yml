@@ -1,4 +1,4 @@
-name: Windows OpenVPN3 GUI
+name: Windows IITDelhiVPN GUI
 
 on:
   workflow_dispatch:
