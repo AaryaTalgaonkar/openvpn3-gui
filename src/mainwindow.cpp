@@ -47,7 +47,6 @@
 namespace {
 
 #ifdef Q_OS_LINUX
-// Linux backend does not yet define connection steps; use a local minimal set.
 const ConnectionStepDefinition kConnectionSteps[] = {
     {"CONNECTING", "↻", "Connecting to server"},
 };
@@ -168,7 +167,6 @@ MainWindow::MainWindow(QWidget *parent)
     backend = std::make_unique<WinMacVpnBackend>(this);
 #endif
 
-    // Create platform-specific keystore
 #ifdef Q_OS_LINUX
     keystore = std::make_unique<LinuxKeyStore>(this);
 #elif defined(Q_OS_WIN)
@@ -177,10 +175,8 @@ MainWindow::MainWindow(QWidget *parent)
     keystore = std::make_unique<MacKeyStore>(this);
 #endif
 
-    // Pass the keystore to the certificate download service for CSR generation
     certificateService.setKeyStore(keystore.get());
 
-    // Pass the keystore to the backend for RSA_SIGN operations
     if (backend) {
         auto *winMacBackend = qobject_cast<WinMacVpnBackend *>(backend.get());
         if (winMacBackend) {
@@ -188,14 +184,12 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-    // Create and set up the connection progress widget (self-contained)
     {
         auto *progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);
         progressWidget->setupSteps(connectingUi.stepsLayout, connectingUi.progressRingHostLayout,
                                    kConnectionSteps, kConnectionStepCount);
     }
 
-    // Create the certificate box widget and embed it into the placeholder container
     certBox = new CertificateBoxWidget(connectUi.certInfoContainer);
     {
         auto *containerLayout = new QVBoxLayout(connectUi.certInfoContainer);
@@ -203,7 +197,6 @@ MainWindow::MainWindow(QWidget *parent)
         containerLayout->addWidget(certBox);
     }
 
-    // Create a single traffic graph widget and add it to the disconnect screen.
     trafficGraphWidget = new TrafficGraphWidget(nullptr);
     trafficGraphWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
@@ -218,7 +211,7 @@ MainWindow::MainWindow(QWidget *parent)
     ThemeManager::applyTheme(darkTheme, ui->themeToggleButton);
 
     connectUi.connectButton->setCheckable(false);
-    connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
+    connectUi.connectButton->setText(QStringLiteral("⏻"));
     connect(certBox, &CertificateBoxWidget::generateClicked,
             this, &MainWindow::handleDownloadButtonClicked);
     connect(getStartedUi.getStartedButton, &QPushButton::clicked,
@@ -293,13 +286,11 @@ MainWindow::MainWindow(QWidget *parent)
                 QMessageBox::information(this, title, message);
             });
 
-    // When the certificate box parses an OVPN file, fetch accurate Google time
     connect(certBox, &CertificateBoxWidget::certificateParsed,
             this, [this]() {
                 certificateService.fetchGoogleTime();
             });
 
-    // Connect Google time sync signals from CertificateDownloadService
     connect(&certificateService, &CertificateDownloadService::googleTimeReceived,
             this, [this](const QDateTime &time) {
                 certBox->updateValidityDisplay(time);
@@ -309,16 +300,12 @@ MainWindow::MainWindow(QWidget *parent)
                 certBox->updateValidityDisplay(QDateTime::currentDateTimeUtc());
             });
 
-    // Check if the platform key exists to decide which screen to show
     if (keystore && keystore->checkKeyExists()) {
-        // Key exists — proceed with existing certificate check flow
         loadSavedCertificateState();
     } else {
-        // Key does NOT exist — show the Get Started page (full page, no top bar)
         ui->rootStack->setCurrentWidget(ui->getStartedPage);
     }
 
-    // Set up system tray manager
     trayManager = std::make_unique<SystemTrayManager>(this, this);
     connect(trayManager.get(), &SystemTrayManager::quitRequested,
             this, [this]() {
@@ -335,10 +322,8 @@ void MainWindow::handleGetStartedClicked()
         return;
     }
 
-    // Generate the platform key
     keystore->generateKey();
 
-    // After generating the key, check for saved certificate
     loadSavedCertificateState();
 }
 
@@ -352,7 +337,7 @@ void MainWindow::setInitialFlow()
     ui->rootStack->setCurrentWidget(ui->normalContentPage);
     ui->screenStack->setCurrentWidget(ui->connectPage);
     certBox->showNoCertMode();
-    connectUi.connectButton->setText(QStringLiteral("⏻")); // Set to power-on emoji
+    connectUi.connectButton->setText(QStringLiteral("⏻"));
     disconnectUi.disconnectButton->setText(QStringLiteral("⏻"));
     disconnectUi.connectedTrafficFrame->setVisible(false);
     trafficGraphWidget->resetTraffic();
@@ -405,15 +390,11 @@ void MainWindow::updateCertificateInfoBox()
         return;
     }
 
-    // Delegate OVPN parsing to the certificate box widget.
-    // On success it will emit certificateParsed(), which triggers
-    // the Google time fetch connected in the constructor.
     certBox->loadFromOvpnFile(ovpnPath);
 }
 
 void MainWindow::handleVpnStateChanged(const QString &state)
 {
-    // Find the progress widget in the connecting page
     auto *progressWidget = connectingUi.progressRingHost->findChild<ConnectionProgressWidget *>();
     if (progressWidget) {
         const int index = progressWidget->stepIndexForState(state);
@@ -450,7 +431,6 @@ void MainWindow::handleVpnConnectionStateChanged(VpnConnectionState state)
         }
         trafficGraphWidget->resetTraffic();
         ui->statusbar->showMessage(QStringLiteral("Status: Connected"));
-        // Move traffic widget into the disconnect host and show the disconnect page
         if (trafficGraphWidget) {
             trafficGraphWidget->setParent(nullptr);
             disconnectUi.trafficStatsLayout->addWidget(trafficGraphWidget);
@@ -522,7 +502,6 @@ void MainWindow::handleVpnConnectionInfoChanged(const QString &remote, const QSt
 
     const QString serverNameLine = (!serverName.isEmpty() && serverName != QStringLiteral("—")) ? serverName : QStringLiteral("—");
 
-    // Client detail columns (left: user IP, right: tunnel)
     if (disconnectUi.clientNameLabel) disconnectUi.clientNameLabel->setText(clientName);
     if (disconnectUi.clientDetailsCol1Label) disconnectUi.clientDetailsCol1Label->setText(userIp);
     if (disconnectUi.clientDetailsCol2Label) disconnectUi.clientDetailsCol2Label->setText(tunnel);
@@ -593,8 +572,5 @@ void MainWindow::closeEvent(QCloseEvent *event)
         return;
     }
 
-    // The event filter in SystemTrayManager handles hiding to tray.
-    // If we reach here without quitting, just accept and let the event
-    // filter's ignore() take effect.
     event->ignore();
 }

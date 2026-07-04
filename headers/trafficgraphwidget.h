@@ -36,7 +36,6 @@ private:
     static QString formatSpeed(qreal bytesPerSecond);
     void trimSamples();
 
-    // Traffic tracking
     QElapsedTimer trafficTimer;
     qulonglong lastUploadBytes = 0;
     qulonglong lastDownloadBytes = 0;

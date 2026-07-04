@@ -9,7 +9,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-
           - name: Windows 11 amd64
             runner: windows-2022
             msvc_arch: amd64
@@ -20,17 +19,6 @@ jobs:
             cmake_arch: x64
             arch: x64
             build_type: Release
-
-          # - name: Windows x86
-          #   runner: windows-latest
-          #   msvc_arch: amd64_x86     
-          #   qt_arch: win32_msvc2019
-          #   qt_version: 5.15.2
-          #   c_compiler: cl
-          #   cpp_compiler: cl
-          #   cmake_arch: Win32   
-          #   build_type: Release
-
           - name: Windows 11 arm64
             runner: windows-2022
             msvc_arch: amd64_arm64
@@ -41,44 +29,19 @@ jobs:
             cmake_arch: ARM64
             arch: arm64
             build_type: Release
-
-          # - name: Windows 10 amd64
-          #   runner: windows-2022
-          #   msvc_arch: amd64
-          #   qt_arch: win64_msvc2022_64
-          #   qt_version: 6.10.1
-          #   c_compiler: cl
-          #   cpp_compiler: cl
-          #   cmake_arch: x64
-          #   build_type: Release
-
-          # - name: Windows 10 arm64
-          #   runner: windows-2022
-          #   msvc_arch: amd64_arm64
-          #   qt_arch: win64_msvc2022_arm64_cross_compiled
-          #   qt_version: 6.9.1
-          #   c_compiler: cl
-          #   cpp_compiler: cl
-          #   cmake_arch: ARM64
-          #   build_type: Release
-
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
-
       - name: Set reusable strings
         id: strings
         shell: bash
         run: |
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-      
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
           arch: ${{ matrix.msvc_arch }}
-
-        
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -86,16 +49,13 @@ jobs:
           aqtversion: '==3.3.*'
           py7zrversion: '==1.0.*'
           arch: ${{ matrix.qt_arch }}
-
       - name: Configure CMake (Windows)
         run: |
           cmake -B ${{ steps.strings.outputs.build-output-dir }} `
             -S ${{ github.workspace }} `
             -A ${{ matrix.cmake_arch }}
-
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
       - name: Deploy (Windows ARM64)
         if: matrix.cmake_arch == 'ARM64'
         shell: pwsh
@@ -106,12 +66,10 @@ jobs:
             --no-opengl-sw `
             --no-system-d3d-compiler `
             ${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe
-
       - name: Deploy (Windows amd64 and Win32)
         if: matrix.cmake_arch == 'x64' || matrix.cmake_arch == 'Win32'
         run: |
           windeployqt --no-translations --no-opengl-sw --no-system-d3d-compiler "${{ steps.strings.outputs.build-output-dir }}\Release\IITDelhiVPN.exe"
-
       - name: Clean up unnecessary files
         shell: pwsh
         run: |
@@ -130,7 +88,6 @@ jobs:
           }
           $imgFormats = Get-ChildItem "$releaseDir\imageformats\*.dll" | Where-Object { $_.Name -match 'q(gif|wbmp|tiff|webp|bmp)' }
           foreach ($f in $imgFormats) { Remove-Item $f.FullName -Force; Write-Host "Removed: $($f.Name)" }
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:

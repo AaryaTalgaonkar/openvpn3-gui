@@ -89,18 +89,17 @@ void LinuxVpnBackend::onLogOutput()
         if (!line.contains("[STATUS]"))
             continue;
 
-        // Map known status patterns to step indices
         if (line.contains("Session state: CONNECTING") || line.contains("Connecting to")) {
-            setCurrentConnectionStep(0); // SESSION_START
+            setCurrentConnectionStep(0);
         }
         else if (line.contains("Authenticating") || line.contains("Authentication")) {
-            setCurrentConnectionStep(1); // AUTH
+            setCurrentConnectionStep(1);
         }
         else if (line.contains("client connecting") || line.contains("Establishing")) {
-            setCurrentConnectionStep(2); // CONNECTING
+            setCurrentConnectionStep(2);
         }
         else if (line.contains("Client connected")) {
-            setCurrentConnectionStep(3); // CONNECTED (just before full connection)
+            setCurrentConnectionStep(3);
             connectedState = VpnConnectionState::Connected;
             emit connected();
             emit connectionStateChanged(connectedState);

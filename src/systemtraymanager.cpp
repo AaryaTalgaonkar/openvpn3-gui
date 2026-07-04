@@ -18,7 +18,6 @@ SystemTrayManager::SystemTrayManager(QWidget *mainWindow, QObject *parent)
     : QObject(parent)
     , m_mainWindow(mainWindow)
 {
-    // Install event filter to intercept close events on the main window
     if (m_mainWindow) {
         m_mainWindow->installEventFilter(this);
     }
@@ -31,17 +30,12 @@ SystemTrayManager::~SystemTrayManager()
 
 bool SystemTrayManager::ensureSingleInstance()
 {
-    // Use a static pointer so the QSharedMemory persists for the app's lifetime.
-    // If it were a local variable, it would go out of scope and release the
-    // shared memory segment, defeating the single-instance check.
     static QSharedMemory *sharedMem = nullptr;
     if (!sharedMem) {
         sharedMem = new QSharedMemory(kSharedMemoryKey);
     }
 
-    // Try to attach to existing shared memory
     if (sharedMem->attach()) {
-        // Another instance is already running — tell it to show itself
         QLocalSocket socket;
         socket.connectToServer(kLocalServerName);
         if (socket.waitForConnected(1000)) {
@@ -49,10 +43,9 @@ bool SystemTrayManager::ensureSingleInstance()
             socket.waitForBytesWritten(1000);
             socket.waitForDisconnected(1000);
         }
-        return false; // Signal that we should not continue
+        return false;
     }
 
-    // We are the first instance — create the shared memory
     if (!sharedMem->create(1)) {
         return false;
     }
@@ -66,9 +59,7 @@ void SystemTrayManager::setup()
         return;
     }
 
-    // Set up local server to receive "raise" commands from future instances
     m_localServer = new QLocalServer(this);
-    // Remove any leftover server from a previous crash
     QLocalServer::removeServer(kLocalServerName);
     if (m_localServer->listen(kLocalServerName)) {
         connect(m_localServer, &QLocalServer::newConnection, this, [this]() {
@@ -77,12 +68,10 @@ void SystemTrayManager::setup()
                 connect(clientSocket, &QLocalSocket::readyRead, this, [this, clientSocket]() {
                     QByteArray data = clientSocket->readAll();
                     if (data.trimmed() == "raise") {
-                        // Bring the main window to the front
                         if (m_mainWindow) {
                             m_mainWindow->show();
                             m_mainWindow->raise();
                             m_mainWindow->activateWindow();
-                            // Update tray menu text if showing
                             if (m_showHideAction) {
                                 m_showHideAction->setText(QStringLiteral("Hide"));
                             }
@@ -100,11 +89,9 @@ void SystemTrayManager::setup()
 
     m_trayMenu = new QMenu(qobject_cast<QWidget *>(m_mainWindow));
     if (!m_trayMenu) {
-        // Fallback: create menu without parent widget
         m_trayMenu = new QMenu();
     }
 
-    // Show/Hide action — managed entirely by this class
     m_showHideAction = m_trayMenu->addAction(QStringLiteral("Hide"));
     connect(m_showHideAction, &QAction::triggered, this, &SystemTrayManager::toggleVisibility);
 
@@ -136,11 +123,9 @@ bool SystemTrayManager::isQuitting() const
 
 bool SystemTrayManager::eventFilter(QObject *obj, QEvent *event)
 {
-    // Intercept close events on the main window — hide to tray instead
     if (obj == m_mainWindow && event->type() == QEvent::Close) {
         auto *closeEvent = static_cast<QCloseEvent *>(event);
         if (!m_quitting) {
-            // Hide instead of closing
             toggleVisibility();
             closeEvent->ignore();
             return true;
@@ -156,7 +141,6 @@ void SystemTrayManager::toggleVisibility()
     }
 
     if (m_mainWindow->isVisible()) {
-        // Hide all modal dialogs as well (e.g. password prompt, error messages)
         for (QWidget *widget : QApplication::topLevelWidgets()) {
             if (widget != m_mainWindow && widget->isModal() && widget->isVisible()) {
                 widget->hide();

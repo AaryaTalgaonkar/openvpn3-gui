@@ -112,7 +112,6 @@ QByteArray WindowsKeyStore::p1363ToDer(const QByteArray &p1363Sig)
     QByteArray rPart = p1363Sig.left(32);
     QByteArray sPart = p1363Sig.mid(32);
 
-
     CERT_ECC_SIGNATURE eccSig = {};
 
     QByteArray rLe = rPart;

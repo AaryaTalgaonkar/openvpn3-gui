@@ -9,7 +9,6 @@ LinuxKeyStore::LinuxKeyStore(QObject *parent)
 
 bool LinuxKeyStore::checkKeyExists()
 {
-    // TODO: Implement using libsecret / secret-tool or a keyring D-Bus API.
     qWarning() << "[LinuxKeyStore] checkKeyExists: not yet implemented.";
     return false;
 }

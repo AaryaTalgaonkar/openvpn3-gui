@@ -17,11 +17,8 @@ public:
     explicit StatusWidget(QWidget *parent = nullptr);
     ~StatusWidget();
 
-    /// Show the generate button (no-cert mode)
     void showGenerateMode();
-    /// Show the status pill with given text and color (active / not-yet-valid)
     void showStatusPill(const QString &text, const QString &textColor, const QString &bgColor);
-    /// Show the renew button (expired mode)
     void showExpiredMode();
 
     void setGenerateEnabled(bool enabled);

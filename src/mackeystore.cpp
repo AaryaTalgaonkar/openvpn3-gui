@@ -9,7 +9,6 @@ MacKeyStore::MacKeyStore(QObject *parent)
 
 bool MacKeyStore::checkKeyExists()
 {
-    // TODO: Implement using Security framework (SecKeychain / SecItem).
     qWarning() << "[MacKeyStore] checkKeyExists: not yet implemented.";
     return false;
 }

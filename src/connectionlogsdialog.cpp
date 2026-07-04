@@ -31,11 +31,9 @@ ConnectionLogsDialog::ConnectionLogsDialog(const QStringList &logs, QWidget *par
     logFont.setFamily(QStringLiteral("Courier New"));
     logFont.setPointSize(10);
     viewer->setFont(logFont);
-    // Wrap long lines to the widget width to avoid horizontal scrolling
     viewer->setLineWrapMode(QPlainTextEdit::WidgetWidth);
     viewer->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-    // Modern thin scrollbar styling for the log viewer
     const QString logScrollStyle = QStringLiteral(
         "QPlainTextEdit { font-family: 'Courier New'; font-size: 10px; }"
         "QScrollBar:vertical { background: transparent; width: 10px; margin: 0px 0px 0px 0px; }"

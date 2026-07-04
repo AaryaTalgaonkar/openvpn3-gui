@@ -5,8 +5,6 @@
 #include <QByteArray>
 #include <QString>
 
-/// Stub implementation for macOS.
-/// TODO: Implement using the Security framework / Keychain when required.
 class MacKeyStore : public IKeyStore
 {
     Q_OBJECT

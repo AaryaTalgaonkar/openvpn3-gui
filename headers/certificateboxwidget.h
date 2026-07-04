@@ -35,15 +35,12 @@ public:
     void setDownloadStatus(const QString &text);
     void setDownloadProgress(int value);
 
-    /// Parse an OVPN file, extract the embedded certificate,
-    /// and populate the UI fields. Emits certificateParsed() on success.
     void loadFromOvpnFile(const QString &ovpnPath);
 
     Ui::CertificateBox *ui() { return m_ui; }
 
 signals:
     void generateClicked();
-    /// Emitted after successfully parsing an OVPN certificate.
     void certificateParsed();
 
 private slots:
@@ -52,7 +49,6 @@ private slots:
 private:
     Ui::CertificateBox *m_ui;
 
-    // Sub-widgets (promoted in .ui, but we also store typed pointers for convenience)
     UserInfoWidget *m_userInfo;
     StatusWidget *m_noCertStatus;
     StatusWidget *m_certStatus;

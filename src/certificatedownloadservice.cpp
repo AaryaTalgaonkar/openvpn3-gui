@@ -201,7 +201,7 @@ CertificateDownloadService::CertificateDownloadService(QObject *parent)
     : QObject(parent)
 {
     googleRetryTimer = new QTimer(this);
-    googleRetryTimer->setInterval(5000); // Retry every 5 seconds
+    googleRetryTimer->setInterval(5000);
     connect(googleRetryTimer, &QTimer::timeout, this, &CertificateDownloadService::retryFetchGoogleTime);
 }
 
@@ -232,7 +232,6 @@ void CertificateDownloadService::loadSavedCertificateState()
 
 void CertificateDownloadService::fetchGoogleTime()
 {
-    // Make a HEAD request to Google to get the Date header for accurate time
     auto *googleManager = new QNetworkAccessManager(this);
     connect(googleManager, &QNetworkAccessManager::finished,
             this, [this, googleManager](QNetworkReply *reply) {
@@ -250,9 +249,7 @@ void CertificateDownloadService::fetchGoogleTime()
 void CertificateDownloadService::handleGoogleTimeReply(QNetworkReply *reply)
 {
     if (reply->error() != QNetworkReply::NoError) {
-        // Fallback: use local system time, retry when back online
         emit googleTimeFetchFailed();
-        // Start retry timer to fetch real time when network becomes available
         if (googleRetryTimer && !googleRetryTimer->isActive()) {
             googleRetryTimer->start();
         }
@@ -268,8 +265,6 @@ void CertificateDownloadService::handleGoogleTimeReply(QNetworkReply *reply)
         return;
     }
 
-    // Parse the RFC 1123 date from Google's headers
-    // Example: "Thu, 18 Jun 2026 12:30:00 GMT"
     QDateTime googleTime = QDateTime::fromString(dateHeader, QStringLiteral("ddd, dd MMM yyyy HH:mm:ss 'GMT'"));
     googleTime.setTimeZone(QTimeZone::UTC);
 
@@ -281,7 +276,6 @@ void CertificateDownloadService::handleGoogleTimeReply(QNetworkReply *reply)
         return;
     }
 
-    // Successfully got Google time — stop retry timer and emit
     if (googleRetryTimer && googleRetryTimer->isActive()) {
         googleRetryTimer->stop();
     }
@@ -322,10 +316,8 @@ void CertificateDownloadService::startCertificateDownload(const QString &usernam
 
     emit busyChanged(true);
 
-    // Show the download progress UI
     emit downloadProgressChanged(0);
 
-    // Start Stage 1: Authenticate with the server
     authenticateUser();
 }
 
@@ -333,16 +325,13 @@ void CertificateDownloadService::authenticateUser()
 {
     emit statusMessage(QStringLiteral("Authenticating..."));
 
-    // Mock the server authentication: after a short delay, return the email address
     QTimer::singleShot(1500, this, [this]() {
-        // Mocked server response: email address for the user
         currentEmail = QStringLiteral("cs5221646@cse.iitd.ernet.in");
 
         emit statusMessage(QStringLiteral("Email received: %1").arg(currentEmail));
         emit authenticationComplete(currentEmail);
         emit downloadProgressChanged(33);
 
-        // Proceed to Stage 2: Generate CSR using the keystore
         generateCsr();
     });
 }
@@ -351,7 +340,6 @@ void CertificateDownloadService::generateCsr()
 {
     emit statusMessage(QStringLiteral("Generating CSR..."));
 
-    // Use the platform keystore to generate the CSR
     currentCsrData = keystore->generateCsr(currentUser, currentEmail);
 
     if (currentCsrData.isEmpty()) {
@@ -364,7 +352,6 @@ void CertificateDownloadService::generateCsr()
     emit csrGenerated(currentCsrData);
     emit downloadProgressChanged(66);
 
-    // Proceed to Stage 3: Submit CSR to server
     submitCsr();
 }
 
@@ -372,7 +359,6 @@ void CertificateDownloadService::submitCsr()
 {
     emit statusMessage(QStringLiteral("Submitting CSR to server..."));
 
-    // Mock the server submission: after a short delay, write the OVPN file
     QTimer::singleShot(1500, this, [this]() {
         const QString targetPath = makeDownloadPath();
         if (targetPath.isEmpty()) {
@@ -381,7 +367,6 @@ void CertificateDownloadService::submitCsr()
             return;
         }
 
-        // Write the hardcoded OVPN content to file (mocked server response)
         QFile file(targetPath);
         if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
             emit busyChanged(false);

@@ -14,20 +14,17 @@ CertificateBoxWidget::CertificateBoxWidget(QWidget *parent)
 {
     m_ui->setupUi(this);
 
-    // Find promoted sub-widgets by name
     m_noCertStatus = findChild<StatusWidget *>(QStringLiteral("noCertStatusWidget"));
     m_certStatus = findChild<StatusWidget *>(QStringLiteral("certStatusWidget"));
     m_userInfo = findChild<UserInfoWidget *>(QStringLiteral("certUserInfo"));
     m_validityTimeline = findChild<ValidityTimelineWidget *>(QStringLiteral("certValidityTimeline"));
     m_generateProgress = findChild<GenerateProgressWidget *>(QStringLiteral("noCertProgress"));
 
-    // Connect no-cert-mode status widget signals -> our own generateClicked
     if (m_noCertStatus) {
         connect(m_noCertStatus, &StatusWidget::generateClicked,
                 this, &CertificateBoxWidget::generateClicked);
     }
 
-    // Connect cert-present-mode status widget signals
     if (m_certStatus) {
         connect(m_certStatus, &StatusWidget::generateClicked,
                 this, &CertificateBoxWidget::generateClicked);
@@ -35,7 +32,6 @@ CertificateBoxWidget::CertificateBoxWidget(QWidget *parent)
                 this, &CertificateBoxWidget::onRenewClicked);
     }
 
-    // Initially show no-cert mode
     m_ui->certInfoStack->setCurrentIndex(0);
 }
 
@@ -178,6 +174,5 @@ void CertificateBoxWidget::setDownloadProgress(int value)
 
 void CertificateBoxWidget::onRenewClicked()
 {
-    // Renew button triggers the same action as generate
     emit generateClicked();
 }

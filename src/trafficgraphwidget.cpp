@@ -117,17 +117,12 @@ void TrafficGraphWidget::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::TextAntialiasing, true);
 
     const QRectF outer = rect().adjusted(1, 1, -1, -1);
-    // Reduce bottom inset so the bottom-most horizontal grid line sits closer to the frame.
     const QRectF plotArea = outer.adjusted(16, 22, -16, -12);
     const QColor borderColor(0, 0, 0, 22);
     const QColor gridColor(0, 0, 0, 20);
     const QColor textColor = palette().color(QPalette::WindowText);
     const QColor uploadColor(194, 23, 23);
     const QColor downloadColor(30, 136, 229);
-
-    // Inner rounded border removed so the containing frame's outline is the only border.
-
-    // Title removed: speeds/legends are drawn directly on the graph per design.
 
     if (samples.isEmpty()) {
         painter.setPen(QColor(textColor.red(), textColor.green(), textColor.blue(), 160));
@@ -168,8 +163,6 @@ void TrafficGraphWidget::paintEvent(QPaintEvent *event)
         const qreal y = plotArea.top() + (plotArea.height() * row / (kHorizontalGridLines - 1.0));
         painter.drawLine(QPointF(plotArea.left(), y), QPointF(plotArea.right(), y));
     }
-    // Vertical grid lines removed — keeping only horizontal lines per request.
-
     auto drawSeries = [&](const QVector<SamplePoint> &series,
                           const QColor &seriesColor,
                           auto extractor) {
@@ -210,9 +203,6 @@ void TrafficGraphWidget::paintEvent(QPaintEvent *event)
     drawSeries(samples, uploadColor, [](const SamplePoint &sample) { return sample.uploadSpeed; });
     drawSeries(samples, downloadColor, [](const SamplePoint &sample) { return sample.downloadSpeed; });
 
-    // Legends removed per request; visual indicators are the colored lines and speed overlays.
-
-    // Draw max and current speeds on a single baseline above the top horizontal grid line.
     QFont smallFont = font();
     smallFont.setBold(true);
     smallFont.setPointSizeF(qMax<qreal>(8.0, smallFont.pointSizeF() - 2.0));
@@ -221,26 +211,21 @@ void TrafficGraphWidget::paintEvent(QPaintEvent *event)
     const qreal labelBottom = plotArea.top() - 4.0;
     const qreal labelHeight = 14.0;
     const QString maxText = QStringLiteral("max %1").arg(formatSpeed(maxSpeed));
-    // Max (rightmost)
     painter.setPen(QColor(textColor.red(), textColor.green(), textColor.blue(), 150));
     painter.drawText(QRectF(plotArea.right() - 8.0 - 180.0, labelBottom - labelHeight, 180.0, labelHeight),
                      Qt::AlignRight | Qt::AlignBottom, maxText);
 
-    // Draw current speeds directly on the graph (overlays) so separate stat cards aren't required.
     if (!samples.isEmpty()) {
         const auto &last = samples.last();
         const QString upText = QStringLiteral("↑ %1").arg(formatSpeed(last.uploadSpeed));
         const QString downText = QStringLiteral("↓ %1").arg(formatSpeed(last.downloadSpeed));
 
-        // Use the same small font for upload/download so they align with max
         painter.setFont(smallFont);
 
-        // Upload (left)
         painter.setPen(uploadColor);
         painter.drawText(QRectF(plotArea.left() + 8.0, labelBottom - labelHeight, 180.0, labelHeight),
                  Qt::AlignLeft | Qt::AlignBottom, upText);
 
-        // Download (center)
         painter.setPen(downloadColor);
         painter.drawText(QRectF(plotArea.left() + (plotArea.width() - 180.0) / 2.0, labelBottom - labelHeight, 180.0, labelHeight),
                  Qt::AlignHCenter | Qt::AlignBottom, downText);

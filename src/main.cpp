@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
     QApplication::setFont(QFont("Titillium Web"));
     a.setWindowIcon(QIcon(":/img/logo.png"));
 
-    // Ensure only one instance of the application runs
     if (!SystemTrayManager::ensureSingleInstance()) {
         return 0;
     }

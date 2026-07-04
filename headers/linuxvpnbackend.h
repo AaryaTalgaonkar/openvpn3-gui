@@ -22,7 +22,6 @@ public:
     void disconnectVpn() override;
     VpnConnectionState connectionState() const override;
 
-    /// Static definitions — consumers can reference these directly
     static const ConnectionStepDefinition s_connectionSteps[];
     static const int s_connectionStepCount;
 

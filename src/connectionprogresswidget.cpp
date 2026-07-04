@@ -45,11 +45,9 @@ void ConnectionProgressWidget::setupSteps(QVBoxLayout *stepsLayout, QVBoxLayout 
     connectionSteps = steps;
     connectionStepCount = count;
 
-    // Embed this progress widget into the host layout
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     hostLayout->addWidget(this, 0, Qt::AlignCenter);
 
-    // Clear any existing step rows
     while (QLayoutItem *item = stepsLayout->takeAt(0)) {
         delete item->widget();
         delete item;
