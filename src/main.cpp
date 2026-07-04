@@ -1,5 +1,4 @@
 #include "mainwindow.h"
-#include "systemtraymanager.h"
 
 #include <QApplication>
 #include <QFontDatabase>
@@ -14,10 +13,6 @@ int main(int argc, char *argv[])
     QFontDatabase::addApplicationFont(":/fonts/TitilliumWeb-Regular.ttf");
     QApplication::setFont(QFont("Titillium Web"));
     a.setWindowIcon(QIcon(":/img/logo.png"));
-
-    if (!SystemTrayManager::ensureSingleInstance()) {
-        return 0;
-    }
 
     MainWindow w;
     w.show();

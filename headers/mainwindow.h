@@ -7,7 +7,6 @@
 
 class QLabel;
 class QTimer;
-class SystemTrayManager;
 
 #include "ikeystore.h"
 #include "ivpnbackend.h"
@@ -55,7 +54,6 @@ private:
     QSettings settings;
 
     CertificateBoxWidget *certBox = nullptr;
-    std::unique_ptr<SystemTrayManager> trayManager;
 
     void setInitialFlow();
     void setConnectFlow();

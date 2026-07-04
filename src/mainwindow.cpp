@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "thememanager.h"
-#include "systemtraymanager.h"
 #include "connectionlogsdialog.h"
 
 #include <QDir>
@@ -306,14 +305,6 @@ MainWindow::MainWindow(QWidget *parent)
         ui->rootStack->setCurrentWidget(ui->getStartedPage);
     }
 
-    trayManager = std::make_unique<SystemTrayManager>(this, this);
-    connect(trayManager.get(), &SystemTrayManager::quitRequested,
-            this, [this]() {
-                if (backend->connectionState() == VpnConnectionState::Connected) {
-                    backend->disconnectVpn();
-                }
-            });
-    trayManager->setup();
 }
 
 void MainWindow::handleGetStartedClicked()
@@ -564,13 +555,8 @@ bool MainWindow::promptForVpnPasswordAndConnect(const QString &message)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if (trayManager && trayManager->isQuitting()) {
-        if (backend->connectionState() == VpnConnectionState::Connected) {
-            backend->disconnectVpn();
-        }
-        event->accept();
-        return;
+    if (backend->connectionState() == VpnConnectionState::Connected) {
+        backend->disconnectVpn();
     }
-
-    event->ignore();
+    event->accept();
 }
