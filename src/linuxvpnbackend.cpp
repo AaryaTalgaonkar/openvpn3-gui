@@ -215,7 +215,6 @@ void LinuxVpnBackend::onLogOutput()
         QString line = QString::fromUtf8(logProcess.readLine()).trimmed();
         qDebug().noquote() << "[OVPN3]" << line;
 
-        // Parse "Client INFO: Connected:" line for connection info
         if (line.contains("Client INFO: Connected:")) {
             parseConnectedLine(line);
         }

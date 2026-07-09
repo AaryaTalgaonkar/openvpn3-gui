@@ -182,11 +182,15 @@ QString makeDownloadPath()
     baseDir = QDir(QCoreApplication::applicationDirPath());
     baseDir.cdUp();
 #else
-    const QString basePath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    const QString basePath = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
     if (basePath.isEmpty()) {
         return {};
     }
     baseDir = QDir(basePath);
+    if (!baseDir.mkpath(QCoreApplication::applicationName())) {
+        return {};
+    }
+    baseDir.cd(QCoreApplication::applicationName());
 #endif
 
     if (!baseDir.mkpath("configurations")) {
