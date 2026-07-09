@@ -176,8 +176,13 @@ QString makeDownloadPath()
     QDir baseDir;
 
 #ifdef Q_OS_WIN
-    baseDir = QDir(QCoreApplication::applicationDirPath());
-    baseDir.cdUp();
+    {
+        const QString basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        if (basePath.isEmpty()) {
+            return {};
+        }
+        baseDir = QDir(basePath);
+    }
 #elif defined(Q_OS_MAC)
     baseDir = QDir(QCoreApplication::applicationDirPath());
     baseDir.cdUp();

@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QTextStream>
 
 #include <windows.h>
@@ -195,8 +196,15 @@ QByteArray WindowsKeyStore::generateCsr(const QString &username,
         "KeyUsage = 0x80 ; Digital Signature\n"
     ).arg(safeUser, safeEmail, providerParam(), QLatin1String(kKeyName));
 
-    QDir baseDir(QCoreApplication::applicationDirPath());
-    baseDir.cdUp();
+    QDir baseDir;
+    {
+        const QString basePath = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+        if (basePath.isEmpty()) {
+            qWarning() << "[WindowsKeyStore] generateCsr: cannot get app data path.";
+            return {};
+        }
+        baseDir = QDir(basePath);
+    }
     if (!baseDir.mkpath("configurations")) {
         qWarning() << "[WindowsKeyStore] generateCsr: cannot create config dir.";
         return {};
