@@ -1,4 +1,4 @@
-name: Mac OpenVPN3 GUI
+name: Mac IITDelhiVPN GUI
 
 on:
   workflow_dispatch:
