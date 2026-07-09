@@ -120,7 +120,7 @@ void TrafficGraphWidget::paintEvent(QPaintEvent *event)
     const QRectF plotArea = outer.adjusted(16, 22, -16, -12);
     const QColor borderColor(0, 0, 0, 22);
     const QColor gridColor(0, 0, 0, 20);
-    const QColor textColor = palette().color(QPalette::WindowText);
+    const QColor textColor(92, 99, 112);
     const QColor uploadColor(194, 23, 23);
     const QColor downloadColor(30, 136, 229);
 
@@ -211,7 +211,7 @@ void TrafficGraphWidget::paintEvent(QPaintEvent *event)
     const qreal labelBottom = plotArea.top() - 4.0;
     const qreal labelHeight = 14.0;
     const QString maxText = QStringLiteral("max %1").arg(formatSpeed(maxSpeed));
-    painter.setPen(QColor(textColor.red(), textColor.green(), textColor.blue(), 150));
+    painter.setPen(textColor);
     painter.drawText(QRectF(plotArea.right() - 8.0 - 180.0, labelBottom - labelHeight, 180.0, labelHeight),
                      Qt::AlignRight | Qt::AlignBottom, maxText);
 
