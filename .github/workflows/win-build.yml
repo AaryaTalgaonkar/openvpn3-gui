@@ -75,7 +75,6 @@ jobs:
         run: |
           $releaseDir = "${{ steps.strings.outputs.build-output-dir }}\Release"
           $remove = @(
-            "$releaseDir\vc_redist.x64.exe",
             "$releaseDir\opengl32sw.dll",
             "$releaseDir\dxcompiler.dll",
             "$releaseDir\dxil.dll",
@@ -86,6 +85,7 @@ jobs:
           foreach ($file in $remove) {
             if (Test-Path $file) { Remove-Item $file -Force; Write-Host "Removed: $file" }
           }
+          Get-ChildItem "$releaseDir\vc_redist*" | ForEach-Object { Remove-Item $_.FullName -Force; Write-Host "Removed: $($_.Name)" }
           $imgFormats = Get-ChildItem "$releaseDir\imageformats\*.dll" | Where-Object { $_.Name -match 'q(gif|wbmp|tiff|webp|bmp)' }
           foreach ($f in $imgFormats) { Remove-Item $f.FullName -Force; Write-Host "Removed: $($f.Name)" }
       - name: Upload build artifacts
