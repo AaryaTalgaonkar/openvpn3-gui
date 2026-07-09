@@ -28,8 +28,6 @@ public:
     void connectVpn(const QString &ovpnPath,
                     const QString &password) override;
 
-    void updatePassword(const QString &password) override;
-
     void disconnectVpn() override;
     VpnConnectionState connectionState() const override;
 

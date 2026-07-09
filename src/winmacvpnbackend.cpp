@@ -159,11 +159,6 @@ void WinMacVpnBackend::connectVpn(const QString &ovpnPath,
 
 }
 
-void WinMacVpnBackend::updatePassword(const QString &password)
-{
-    mgmtPassword = password;
-}
-
 void WinMacVpnBackend::disconnectVpn()
 {
     if (mgmtSocket.state() != QAbstractSocket::ConnectedState || connectedState != VpnConnectionState::Connected)

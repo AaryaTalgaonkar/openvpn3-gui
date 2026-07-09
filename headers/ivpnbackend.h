@@ -27,8 +27,6 @@ public:
     virtual void connectVpn(const QString &ovpnPath,
                             const QString &password) = 0;
 
-    virtual void updatePassword(const QString &password) = 0;
-
     virtual void disconnectVpn() = 0;
     virtual VpnConnectionState connectionState() const = 0;
 

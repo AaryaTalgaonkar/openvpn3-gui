@@ -3,6 +3,7 @@
 
 #include "ivpnbackend.h"
 #include <QProcess>
+#include <QTimer>
 
 class LinuxVpnBackend : public IVpnBackend
 {
@@ -17,8 +18,6 @@ public:
     void connectVpn(const QString &ovpnPath,
                     const QString &password) override;
 
-    void updatePassword(const QString &password) override;
-
     void disconnectVpn() override;
     VpnConnectionState connectionState() const override;
 
@@ -27,16 +26,22 @@ public:
 
 private slots:
     void onLogOutput();
+    void fetchSessionStats();
+    void parseStatsOutput();
 
 private:
     QProcess logProcess;
     QProcess sessionStart;
+    QTimer m_statsTimer;
+    QProcess m_statsProcess;
 
     QString configPath;
+    QString m_configName;
     VpnConnectionState connectedState = VpnConnectionState::Disconnected;
     int m_currentConnectionStep = -1;
 
     void setCurrentConnectionStep(int stepIndex);
+    void parseConnectedLine(const QString &line);
 };
 
 #endif
