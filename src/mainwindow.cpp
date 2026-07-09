@@ -176,12 +176,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     certificateService.setKeyStore(keystore.get());
 
+#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
     if (backend) {
         auto *winMacBackend = qobject_cast<WinMacVpnBackend *>(backend.get());
         if (winMacBackend) {
             winMacBackend->setKeyStore(keystore.get());
         }
     }
+#endif
 
     {
         auto *progressWidget = new ConnectionProgressWidget(connectingUi.progressRingHost);
