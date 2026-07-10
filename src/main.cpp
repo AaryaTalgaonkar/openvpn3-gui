@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
     // a.setStyle(QStyleFactory::create("Fusion"));
     QApplication::setApplicationName("IITDelhiVPN");
     QApplication::setDesktopFileName("iitdelhivpn");
-    // QFontDatabase::addApplicationFont(":/fonts/TitilliumWeb-Regular.ttf");
-    // QApplication::setFont(QFont("Titillium Web"));
+    QFontDatabase::addApplicationFont(":/fonts/TitilliumWeb-Regular.ttf");
+    QApplication::setFont(QFont("Titillium Web"));
     a.setWindowIcon(QIcon(":/img/logo.png"));
 
     MainWindow w;
