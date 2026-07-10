@@ -4,15 +4,44 @@
 
 #include <QProcess>
 #include <QDebug>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFile>
 #include <QTemporaryFile>
-
-namespace {
-    const QString kSecretTool = QStringLiteral("secret-tool");
-}
 
 LinuxKeyStore::LinuxKeyStore(QObject *parent)
     : IKeyStore(parent)
 {
+}
+
+QString LinuxKeyStore::getKeyFilePath() const
+{
+    QString configPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QDir().mkpath(configPath); 
+    return configPath + QStringLiteral("/pkey.pem");
+}
+
+bool LinuxKeyStore::storeKey(const QByteArray &keyData) const
+{
+    QFile file(getKeyFilePath());
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "[LinuxKeyStore] Failed to open key file for writing.";
+        return false;
+    }
+
+    file.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    
+    file.write(keyData);
+    return true;
+}
+
+QByteArray LinuxKeyStore::retrieveKey() const
+{
+    QFile file(getKeyFilePath());
+    if (!file.open(QIODevice::ReadOnly)) {
+        return QByteArray();
+    }
+    return file.readAll();
 }
 
 QByteArray LinuxKeyStore::runCommand(const QString &program, const QStringList &arguments, const QByteArray &inputData) const
@@ -28,45 +57,16 @@ QByteArray LinuxKeyStore::runCommand(const QString &program, const QStringList &
     if (!proc.waitForFinished(5000)) {
         qWarning() << "[LinuxKeyStore]" << program << "timed out.";
         proc.kill();
-        return {};
+        return QByteArray();
     }
 
     if (proc.exitCode() != 0) {
-        qWarning() << "[LinuxKeyStore]" << program << "failed with exit code" << proc.exitCode() << "stderr:" << proc.readAllStandardError();
-        return {};
+        qWarning() << "[LinuxKeyStore]" << program << "failed with exit code" << proc.exitCode() 
+                   << "stderr:" << proc.readAllStandardError();
+        return QByteArray();
     }
 
     return proc.readAllStandardOutput();
-}
-
-QByteArray LinuxKeyStore::retrieveKey() const
-{
-    return runCommand(kSecretTool, {
-        QStringLiteral("lookup"),
-        QStringLiteral("application"), QStringLiteral("iitdvpn"),
-        QStringLiteral("key"), QStringLiteral("private-key")
-    });
-}
-
-bool LinuxKeyStore::storeKey(const QByteArray &keyData) const
-{
-    QByteArray output = runCommand(kSecretTool, {
-        QStringLiteral("store"),
-        QStringLiteral("--label=") + QLatin1String(IKeyStore::kKeyName),
-        QStringLiteral("application"), QStringLiteral("iitdvpn"),
-        QStringLiteral("key"), QStringLiteral("private-key")
-    }, keyData);
-
-    return !output.isNull();
-}
-
-void LinuxKeyStore::clearStoredKey() const
-{
-    runCommand(kSecretTool, {
-        QStringLiteral("clear"),
-        QStringLiteral("application"), QStringLiteral("iitdvpn"),
-        QStringLiteral("key"), QStringLiteral("private-key")
-    });
 }
 
 bool LinuxKeyStore::checkKeyExists()
@@ -93,14 +93,12 @@ void LinuxKeyStore::generateKey()
     });
 
     if (keyData.isEmpty()) {
-        qWarning() << "[LinuxKeyStore] Key generation failed.";
+        qWarning() << "[LinuxKeyStore] OpenSSL Elliptic Curve Key generation failed.";
         return;
     }
 
     if (storeKey(keyData)) {
-        qDebug() << "[LinuxKeyStore] ECDSA P-256 key generated and stored in secret service.";
-    } else {
-        qWarning() << "[LinuxKeyStore] Key generated but failed to store in secret service.";
+        qDebug() << "[LinuxKeyStore] ECDSA P-256 key successfully generated and stored locally.";
     }
 }
 
@@ -109,13 +107,13 @@ QByteArray LinuxKeyStore::signData(const QByteArray &data)
     QByteArray keyData = retrieveKey();
     if (keyData.isEmpty()) {
         qWarning() << "[LinuxKeyStore] No key available for signing.";
-        return {};
+        return QByteArray();
     }
 
     QTemporaryFile tmpKey;
     if (!tmpKey.open()) {
-        qWarning() << "[LinuxKeyStore] Failed to create temporary file for signing.";
-        return {};
+        qWarning() << "[LinuxKeyStore] Failed to generate safe temporary file context for signing.";
+        return QByteArray();
     }
     tmpKey.write(keyData);
     tmpKey.flush();
@@ -136,13 +134,13 @@ QByteArray LinuxKeyStore::generateCsr(const QString &username, const QString &em
     QByteArray keyData = retrieveKey();
     if (keyData.isEmpty()) {
         qWarning() << "[LinuxKeyStore] No key available for CSR generation.";
-        return {};
+        return QByteArray();
     }
 
     QTemporaryFile tmpKey;
     if (!tmpKey.open()) {
-        qWarning() << "[LinuxKeyStore] Failed to create temporary file for CSR generation.";
-        return {};
+        qWarning() << "[LinuxKeyStore] Failed to generate safe temporary file context for CSR.";
+        return QByteArray();
     }
     tmpKey.write(keyData);
     tmpKey.flush();
@@ -165,8 +163,8 @@ QByteArray LinuxKeyStore::generateCsr(const QString &username, const QString &em
 
 void LinuxKeyStore::clearKey()
 {
-    clearStoredKey();
-    qDebug() << "[LinuxKeyStore] Key deleted from secret service.";
+    QFile::remove(getKeyFilePath());
+    qDebug() << "[LinuxKeyStore] Key explicitly wiped from filesystem storage.";
 }
 
 #endif

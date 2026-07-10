@@ -1,15 +1,16 @@
 #pragma once
 
 #include "ikeystore.h"
-#include <QObject>
 #include <QByteArray>
 #include <QString>
+#include <QStringList>
 
 #ifdef Q_OS_LINUX
 
 class LinuxKeyStore : public IKeyStore
 {
     Q_OBJECT
+
 public:
     explicit LinuxKeyStore(QObject *parent = nullptr);
     ~LinuxKeyStore() override = default;
@@ -21,10 +22,13 @@ public:
     void clearKey() override;
 
 private:
-    QByteArray retrieveKey() const;
+    QString getKeyFilePath() const;
     bool storeKey(const QByteArray &keyData) const;
-    void clearStoredKey() const;
-    QByteArray runCommand(const QString &program, const QStringList &arguments, const QByteArray &inputData = QByteArray()) const;
+    QByteArray retrieveKey() const;
+    
+    QByteArray runCommand(const QString &program, 
+                          const QStringList &arguments, 
+                          const QByteArray &inputData = QByteArray()) const;
 };
 
 #endif
