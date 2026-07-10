@@ -75,7 +75,7 @@ jobs:
     - name: Run LinuxDeploy
       shell: bash
       env:
-        EXTRA_PLATFORM_PLUGINS: "libqwayland.so"
+        EXTRA_PLATFORM_PLUGINS: "libqwayland.so;libqxcb.so"
         EXTRA_QT_MODULES: "libQt6WaylandClient.so"
       run: |
         TOOL_DIR="${{ github.workspace }}"
@@ -88,7 +88,7 @@ jobs:
           -d "${{ github.workspace }}/deploy/iitdelhivpn.desktop" \
           -i "${{ github.workspace }}/resources/img/iitdelhivpn.png" \
           -e "$APPDIR/IITDelhiVPN" \
-          --plugin qt 
+          ---plugin qt
 
     - name: Filter system libraries, docs and translations
       shell: bash
