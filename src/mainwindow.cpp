@@ -151,7 +151,6 @@ bool getPasswordFromDialog(QWidget *parent, const QString &title, const QString 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , settings("IIT Delhi", "IITDelhiVPN")
 {
     ui->setupUi(this);
     connectUi.setupUi(ui->connectPage);
@@ -208,7 +207,7 @@ MainWindow::MainWindow(QWidget *parent)
     disconnectUi.uploadSpeedValue->setText(QStringLiteral("--"));
     disconnectUi.downloadSpeedValue->setText(QStringLiteral("--"));
 
-    darkTheme = settings.value("theme/dark", false).toBool();
+    darkTheme = false;
     ThemeManager::applyTheme(darkTheme, ui->themeToggleButton);
 
     connectUi.connectButton->setCheckable(false);
@@ -456,8 +455,6 @@ void MainWindow::handleVpnByteCountChanged(qulonglong uploadBytes, qulonglong do
 void MainWindow::on_themeToggleButton_clicked()
 {
     darkTheme = !darkTheme;
-    settings.setValue("theme/dark", darkTheme);
-    settings.sync();
     ThemeManager::applyTheme(darkTheme, ui->themeToggleButton);
 }
 

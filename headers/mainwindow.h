@@ -2,7 +2,6 @@
 #include <memory>
 #include "custommessagebox.h"
 #include <QCloseEvent>
-#include <QSettings>
 #include <QStringList>
 
 class QLabel;
@@ -51,7 +50,6 @@ private:
     CertificateDownloadService certificateService;
     TrafficGraphWidget *trafficGraphWidget = nullptr;
     QStringList recentConnectionLogs;
-    QSettings settings;
 
     CertificateBoxWidget *certBox = nullptr;
 
