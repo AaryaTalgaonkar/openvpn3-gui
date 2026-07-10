@@ -36,6 +36,7 @@ private:
         box.setWindowTitle(title);
         box.setText(text);
         box.setStandardButtons(buttons);
+        box.setWindowFlags(box.windowFlags() & ~(Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint));
         if (defaultButton != NoButton) {
             box.setDefaultButton(defaultButton);
         }

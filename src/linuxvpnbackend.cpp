@@ -214,6 +214,7 @@ void LinuxVpnBackend::onLogOutput()
 
         QString line = QString::fromUtf8(logProcess.readLine()).trimmed();
         qDebug().noquote() << "[OVPN3]" << line;
+        emit logLineReceived(line);
 
         if (line.contains("Client INFO: Connected:")) {
             parseConnectedLine(line);
@@ -241,12 +242,15 @@ void LinuxVpnBackend::onLogOutput()
 
         if (statusMinor == "Client connecting") {
             setCurrentConnectionStep(0);
+            emit stateChanged(QString::fromUtf8(s_connectionSteps[0].state));
         }
         else if (statusMinor == "Client reconnect" || statusMinor == "Client connection resuming") {
             setCurrentConnectionStep(0);
+            emit stateChanged(QString::fromUtf8(s_connectionSteps[0].state));
         }
         else if (statusMinor == "Client connected") {
             setCurrentConnectionStep(1); 
+            emit stateChanged(QString::fromUtf8(s_connectionSteps[1].state));
             connectedState = VpnConnectionState::Connected;
             emit connected();
             emit connectionStateChanged(connectedState);

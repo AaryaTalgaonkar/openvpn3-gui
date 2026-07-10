@@ -46,10 +46,8 @@
 namespace {
 
 #ifdef Q_OS_LINUX
-const ConnectionStepDefinition kConnectionSteps[] = {
-    {"CONNECTING", "↻", "Connecting to server"},
-};
-constexpr int kConnectionStepCount = static_cast<int>(sizeof(kConnectionSteps) / sizeof(kConnectionSteps[0]));
+const ConnectionStepDefinition* const kConnectionSteps = LinuxVpnBackend::s_connectionSteps;
+const int kConnectionStepCount = LinuxVpnBackend::s_connectionStepCount;
 #elif defined(Q_OS_WIN) || defined(Q_OS_MAC)
 const ConnectionStepDefinition* const kConnectionSteps = WinMacVpnBackend::kWinMacConnectionSteps;
 const int kConnectionStepCount = WinMacVpnBackend::kWinMacConnectionStepCount;
@@ -75,6 +73,7 @@ bool getCredentialsFromDialog(QWidget *parent, const QString &title, const QStri
     QDialog dialog(parent);
     dialog.setWindowTitle(title);
     dialog.setFixedWidth(300);
+    dialog.setWindowFlags(dialog.windowFlags() & ~(Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint));
 
     auto *layout = new QVBoxLayout(&dialog);
     layout->setSpacing(12);
@@ -124,6 +123,7 @@ bool getPasswordFromDialog(QWidget *parent, const QString &title, const QString 
     QInputDialog dialog(parent);
     dialog.setWindowTitle(title);
     dialog.setLabelText(promptText);
+    dialog.setWindowFlags(dialog.windowFlags() & ~(Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint));
     dialog.setInputMode(QInputDialog::TextInput);
     dialog.setTextEchoMode(QLineEdit::Password);
     dialog.setSizeGripEnabled(false);

@@ -77,7 +77,7 @@ bool LinuxKeyStore::checkKeyExists()
     }
 
     QByteArray output = runCommand(QStringLiteral("openssl"), {
-        QStringLiteral("ec"), QStringLiteral("-noout")
+        QStringLiteral("ec")
     }, keyData);
 
     return !output.isEmpty();
