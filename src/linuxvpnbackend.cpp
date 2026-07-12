@@ -192,11 +192,11 @@ void LinuxVpnBackend::parseStatsOutput()
     qulonglong bytesIn = 0, bytesOut = 0;
 
     for (const QByteArray &line : data.split('\n')) {
-        if (line.contains("BYTES_IN")) {
+        if (line.contains("BYTES_OUT")) {
             int dot = line.lastIndexOf('.');
             if (dot >= 0)
                 bytesIn = line.mid(dot + 1).trimmed().toULongLong();
-        } else if (line.contains("BYTES_OUT")) {
+        } else if (line.contains("BYTES_IN")) {
             int dot = line.lastIndexOf('.');
             if (dot >= 0)
                 bytesOut = line.mid(dot + 1).trimmed().toULongLong();
